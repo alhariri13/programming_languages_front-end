@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tanzan/add_new_appartment_screen.dart';
 import 'package:tanzan/filter.dart';
 import 'package:tanzan/profile_screen.dart';
 
@@ -61,7 +62,14 @@ class _HomePageState extends State<HomePage> {
             ),
             SizedBox(width: 16),
             IconButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AddNewAppartmentScreen(),
+                  ),
+                );
+              },
               icon: Icon(Icons.add_box_rounded, color: Colors.white),
               iconSize: 40,
             ),
