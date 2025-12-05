@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tanzan/filter.dart';
+import 'package:tanzan/profile_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -72,7 +73,14 @@ class _HomePageState extends State<HomePage> {
             ),
             SizedBox(width: 8),
             IconButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ProfileScreen(),
+                  ),
+                );
+              },
               icon: Icon(Icons.account_box_rounded, color: Colors.white),
               iconSize: 40,
             ),
