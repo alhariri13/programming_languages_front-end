@@ -1,0 +1,261 @@
+import 'package:flutter/material.dart';
+import 'package:bbbb/first_sign_up_screen.dart';
+import 'package:flutter/services.dart';
+import 'package:bbbb/home_page.dart';
+
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  //  Password Visibility
+  bool _isPasswordVisible = false;
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+  void _loginButton() {
+    if (_phoneController.text.trim().isEmpty ||
+        _passwordController.text.trim().isEmpty) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text('Invalid Input'),
+          content: Text(
+            'please make sure that you have already fill all the gaps',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+              },
+              child: Text('Okay'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Scaffold(
+        body: Stack(
+          children: [
+            // 1. Background Image
+            _buildBackgroundImage(),
+
+            // 2. Dark Overlay for better text visibility
+            _buildOverlay(),
+
+            // 3. Main Content (Logo, Fields, Buttons)
+            _buildContent(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBackgroundImage() {
+    return Container(
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/background_image.jpg'),
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverlay() {
+    return Container(color: Colors.black.withOpacity(0.4));
+  }
+
+  Widget _buildContent(BuildContext context) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            // Top spacing to position the content nicely
+            SizedBox(height: MediaQuery.of(context).size.height * 0.15),
+
+            // 4. App Logo/Icon (House icon)
+            const Icon(Icons.home_outlined, color: Colors.white, size: 70.0),
+            const SizedBox(height: 20),
+
+            // 5. Welcome Text (Example: 'Easy Control Learn' or similar)
+            const Text(
+              'TANZAN',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const Text(
+              'Your Swift Key to the Dream Home....',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w300
+              ),
+            ),
+            const SizedBox(height: 50),
+
+
+            // 6. Phone Number Input Field
+            _buildInputField(
+              hintText: 'phone number',
+              icon: Icons.phone_outlined,
+              isPhoneNumber: true,
+              controller: _phoneController,
+            ),
+            const SizedBox(height: 15),
+
+            _buildInputField(
+              hintText: 'Password',
+              controller: _passwordController,
+              icon: Icons.lock_outline,
+              // **يجب تمرير حالة الرؤية الحالية للدالة**
+              isPassword: !_isPasswordVisible,
+              // **تحديد أيقونة العرض عبر تمرير الـ Widget**
+              suffixIcon: IconButton(
+                icon: Icon(
+                  // تبديل الأيقونة بناءً على الحالة الحالية
+                  _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  color: Colors.white70,
+                ),
+                onPressed: () {
+                  // تحديث الحالة عند الضغط على الأيقونة
+                  setState(() {
+                    _isPasswordVisible = !_isPasswordVisible;
+                  });
+                },
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // 8. "Forgot Password?" Link
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {
+                  // TODO: Implement Forgot Password logic
+                },
+                child: const Text(
+                  'Forgot Password?',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // 9. Login Button
+            SizedBox(
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _loginButton,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF3B609E),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'LOGIN',
+                  style: TextStyle(fontSize: 18, color: Colors.white),
+                ),
+              ),
+            ),
+            const SizedBox(height: 50),
+
+            // 10. Registration Link (Don't have an account?)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  "Don't have an account?",
+                  style: TextStyle(color: Colors.white70),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FirstSignUpScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    'Create Account',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper function to build input fields consistently
+  Widget _buildInputField({
+    required String hintText,
+    required IconData icon,
+    required TextEditingController controller,
+    // تم تغيير isPassword إلى isObscureText لتكون أكثر دقة
+    bool isPassword = false,
+    bool isPhoneNumber = false,
+    // ** إضافة معامل اختياري جديد للأيقونة النهائية (Suffix Icon)**
+    Widget? suffixIcon,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: TextField(
+        controller: controller,
+        // **استخدام isPassword لتحديد ما إذا كان النص يجب أن يكون مخفياً (مشفر)**
+        obscureText: isPassword,
+        // **إضافة هذا السطر لمنع إخفاء النص بمجرد إظهاره**
+        obscuringCharacter: '•',
+        style: const TextStyle(color: Colors.white),
+        textAlign: TextAlign.left,
+        keyboardType: isPhoneNumber ? TextInputType.phone : TextInputType.text,
+        inputFormatters: isPhoneNumber
+            ? <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly]
+            : null,
+        decoration: InputDecoration(
+          hintText: hintText,
+          hintStyle: const TextStyle(color: Colors.white70),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 15.0,
+            horizontal: 10.0,
+          ),
+          prefixIcon: Icon(icon, color: Colors.white70),
+          // **تعيين الأيقونة النهائية (العرض/الإخفاء) هنا**
+          suffixIcon: suffixIcon,
+        ),
+      ),
+    );
+  }
+}
