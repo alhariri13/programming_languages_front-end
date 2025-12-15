@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:tanzan/first_sign_up_screen.dart';
+import 'package:bbbb/first_sign_up_screen.dart';
 import 'package:flutter/services.dart';
-import 'package:tanzan/home_page.dart';
+import 'package:bbbb/home_page.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -96,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
             // 5. Welcome Text (Example: 'Easy Control Learn' or similar)
             const Text(
-              'Smart Home Access',
+              'TANZAN',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white,
@@ -104,7 +104,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
+            const Text(
+              'Your Swift Key to the Dream Home....',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w300
+              ),
+            ),
             const SizedBox(height: 50),
+
 
             // 6. Phone Number Input Field
             _buildInputField(

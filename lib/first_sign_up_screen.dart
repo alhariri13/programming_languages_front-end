@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tanzan/second_sign_up_screen.dart';
+import 'package:bbbb/second_sign_up_screen.dart';
 
 class FirstSignUpScreen extends StatefulWidget {
   const FirstSignUpScreen({super.key});
@@ -85,13 +85,13 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
               children: [
                 const SizedBox(height: 90),
 
-                const Icon(Icons.home, size: 80, color: Colors.white),
+                const Icon(Icons.home_outlined, size: 80, color: Colors.white),
 
                 const SizedBox(height: 13),
 
                 // عنوان التطبيق
                 const Text(
-                  "Smart Home Access",
+                  "TANZAN",
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 26,
@@ -106,8 +106,8 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
                   "Create Account",
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 30,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
 

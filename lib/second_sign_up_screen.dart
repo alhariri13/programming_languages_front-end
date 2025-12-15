@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:tanzan/home_page.dart';
+import 'package:bbbb/home_page.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:bbbb/login_screen.dart';
 
-import 'package:tanzan/login_screen.dart';
+
 
 // يتم تحويلها إلى StatefulWidget لتتمكن من تخزين حالة التاريخ والصور
 class SecondSignUpScreen extends StatefulWidget {
@@ -98,13 +99,13 @@ class _NextPageState extends State<SecondSignUpScreen> {
               children: [
                 const SizedBox(height: 90),
 
-                const Icon(Icons.home, size: 80, color: Colors.white),
+                const Icon(Icons.home_outlined, size: 80, color: Colors.white),
 
                 const SizedBox(height: 13),
 
                 // عنوان التطبيق
                 const Text(
-                  "Smart Home Access",
+                  "TANZAN",
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 26,
@@ -119,8 +120,8 @@ class _NextPageState extends State<SecondSignUpScreen> {
                   "Create Account",
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 30,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
 

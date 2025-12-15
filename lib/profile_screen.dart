@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:tanzan/home_page.dart';
-import 'package:tanzan/login_screen.dart';
+import 'package:bbbb/home_page.dart';
+import 'package:bbbb/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
