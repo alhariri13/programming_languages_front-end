@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:bbbb/first_sign_up_screen.dart';
+import 'package:get/get.dart'; // إضافة المكتبة
+import 'package:home/first_sign_up_screen.dart';
 import 'package:flutter/services.dart';
-import 'package:bbbb/home_page.dart';
+import 'package:home/home_page.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,22 +16,22 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isPasswordVisible = false;
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+
   void _loginButton() {
     if (_phoneController.text.trim().isEmpty ||
         _passwordController.text.trim().isEmpty) {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text('Invalid Input'),
-          content: Text(
-            'please make sure that you have already fill all the gaps',
-          ),
+          // استخدام .tr مع نصوصك الأصلية كمفاتيح
+          title: Text('Invalid Input'.tr), 
+          content: Text('please make sure that you have already fill all the gaps'.tr),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(ctx);
               },
-              child: Text('Okay'),
+              child: Text('Okay'.tr),
             ),
           ],
         ),
@@ -45,21 +46,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: Scaffold(
-        body: Stack(
-          children: [
-            // 1. Background Image
-            _buildBackgroundImage(),
+    // إزالة Directionality الثابت لكي تتغير الواجهة (يمين/يسار) تلقائياً حسب اللغة
+    return Scaffold(
+      body: Stack(
+        children: [
+          // 1. Background Image
+          _buildBackgroundImage(),
 
-            // 2. Dark Overlay for better text visibility
-            _buildOverlay(),
+          // 2. Dark Overlay for better text visibility
+          _buildOverlay(),
 
-            // 3. Main Content (Logo, Fields, Buttons)
-            _buildContent(context),
-          ],
-        ),
+          // 3. Main Content (Logo, Fields, Buttons)
+          _buildContent(context),
+        ],
       ),
     );
   }
@@ -87,14 +86,13 @@ class _LoginScreenState extends State<LoginScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            // Top spacing to position the content nicely
             SizedBox(height: MediaQuery.of(context).size.height * 0.15),
 
             // 4. App Logo/Icon (House icon)
             const Icon(Icons.home_outlined, color: Colors.white, size: 70.0),
             const SizedBox(height: 20),
 
-            // 5. Welcome Text (Example: 'Easy Control Learn' or similar)
+            // 5. Welcome Text
             const Text(
               'TANZAN',
               textAlign: TextAlign.center,
@@ -104,10 +102,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const Text(
-              'Your Swift Key to the Dream Home....',
+            Text(
+              'Your Swift Key to the Dream Home....'.tr, // أضفنا .tr
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 14,
                 fontWeight: FontWeight.w300
@@ -115,10 +113,9 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 50),
 
-
             // 6. Phone Number Input Field
             _buildInputField(
-              hintText: 'phone number',
+              hintText: 'phone number'.tr, // أضفنا .tr
               icon: Icons.phone_outlined,
               isPhoneNumber: true,
               controller: _phoneController,
@@ -126,20 +123,16 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 15),
 
             _buildInputField(
-              hintText: 'Password',
+              hintText: 'Password'.tr, // أضفنا .tr
               controller: _passwordController,
               icon: Icons.lock_outline,
-              // **يجب تمرير حالة الرؤية الحالية للدالة**
               isPassword: !_isPasswordVisible,
-              // **تحديد أيقونة العرض عبر تمرير الـ Widget**
               suffixIcon: IconButton(
                 icon: Icon(
-                  // تبديل الأيقونة بناءً على الحالة الحالية
                   _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
                   color: Colors.white70,
                 ),
                 onPressed: () {
-                  // تحديث الحالة عند الضغط على الأيقونة
                   setState(() {
                     _isPasswordVisible = !_isPasswordVisible;
                   });
@@ -152,12 +145,10 @@ class _LoginScreenState extends State<LoginScreen> {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: () {
-                  // TODO: Implement Forgot Password logic
-                },
-                child: const Text(
-                  'Forgot Password?',
-                  style: TextStyle(color: Colors.white70),
+                onPressed: () {},
+                child: Text(
+                  'Forgot Password?'.tr, // أضفنا .tr
+                  style: const TextStyle(color: Colors.white70),
                 ),
               ),
             ),
@@ -174,9 +165,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
-                  'LOGIN',
-                  style: TextStyle(fontSize: 18, color: Colors.white),
+                child: Text(
+                  'LOGIN'.tr, // أضفنا .tr
+                  style: const TextStyle(fontSize: 18, color: Colors.white),
                 ),
               ),
             ),
@@ -186,9 +177,9 @@ class _LoginScreenState extends State<LoginScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
-                  "Don't have an account?",
-                  style: TextStyle(color: Colors.white70),
+                Text(
+                  "Don't have an account?".tr, // أضفنا .tr
+                  style: const TextStyle(color: Colors.white70),
                 ),
                 TextButton(
                   onPressed: () {
@@ -199,9 +190,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     );
                   },
-                  child: const Text(
-                    'Create Account',
-                    style: TextStyle(
+                  child: Text(
+                    'Create Account'.tr, // أضفنا .tr
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
@@ -215,15 +206,13 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Helper function to build input fields consistently
+  // Helper function remains exactly the same
   Widget _buildInputField({
     required String hintText,
     required IconData icon,
     required TextEditingController controller,
-    // تم تغيير isPassword إلى isObscureText لتكون أكثر دقة
     bool isPassword = false,
     bool isPhoneNumber = false,
-    // ** إضافة معامل اختياري جديد للأيقونة النهائية (Suffix Icon)**
     Widget? suffixIcon,
   }) {
     return Container(
@@ -233,9 +222,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       child: TextField(
         controller: controller,
-        // **استخدام isPassword لتحديد ما إذا كان النص يجب أن يكون مخفياً (مشفر)**
         obscureText: isPassword,
-        // **إضافة هذا السطر لمنع إخفاء النص بمجرد إظهاره**
         obscuringCharacter: '•',
         style: const TextStyle(color: Colors.white),
         textAlign: TextAlign.left,
@@ -252,7 +239,6 @@ class _LoginScreenState extends State<LoginScreen> {
             horizontal: 10.0,
           ),
           prefixIcon: Icon(icon, color: Colors.white70),
-          // **تعيين الأيقونة النهائية (العرض/الإخفاء) هنا**
           suffixIcon: suffixIcon,
         ),
       ),

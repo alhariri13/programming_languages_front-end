@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:bbbb/second_sign_up_screen.dart';
+import 'package:get/get.dart'; // إضافة المكتبة
+import 'package:home/second_sign_up_screen.dart';
 
 class FirstSignUpScreen extends StatefulWidget {
   const FirstSignUpScreen({super.key});
@@ -10,11 +11,8 @@ class FirstSignUpScreen extends StatefulWidget {
 
 class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
   final _firstNameController = TextEditingController();
-
   final _lastNameController = TextEditingController();
-
   final _passwordController = TextEditingController();
-
   final _confirmPasswordController = TextEditingController();
 
   void checkInput() {
@@ -25,16 +23,17 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text('Invalid Input'),
+          // استخدام .tr مع نصوصك الأصلية
+          title: Text('Invalid Input'.tr),
           content: Text(
-            'please make sure that you have already fill all the gaps',
+            'please make sure that you have already fill all the gaps'.tr,
           ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(ctx);
               },
-              child: Text('Okay'),
+              child: Text('Okay'.tr),
             ),
           ],
         ),
@@ -43,21 +42,22 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text('Invalid Input'),
+          title: Text('Invalid Input'.tr),
           content: Text(
-            'your cofirm password is not the same password you put please correct it',
+            'your cofirm password is not the same password you put please correct it'.tr,
           ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(ctx);
               },
-              child: Text('Okay'),
+              child: Text('Okay'.tr),
             ),
           ],
         ),
       );
     } else {
+      // استخدام Get.to للانتقال بدلاً من Navigator إذا أردت، أو اتركها كما هي
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const SecondSignUpScreen()),
@@ -73,7 +73,7 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
         children: [
           // خلفية
           Image.asset(
-            "assets/background_image.jpg", // ضع هنا صورة الخلفية
+            "assets/background_image.jpg",
             fit: BoxFit.cover,
           ),
 
@@ -89,7 +89,7 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
 
                 const SizedBox(height: 13),
 
-                // عنوان التطبيق
+                // عنوان التطبيق (ثابت لا يحتاج ترجمة غالباً)
                 const Text(
                   "TANZAN",
                   style: TextStyle(
@@ -102,9 +102,9 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
                 const SizedBox(height: 20),
 
                 // عنوان إنشاء حساب
-                const Text(
-                  "Create Account",
-                  style: TextStyle(
+                Text(
+                  "Create Account".tr, // أضفنا .tr
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 22,
                     fontWeight: FontWeight.w500,
@@ -116,7 +116,7 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
                 // First Name
                 buildInputField(
                   icon: Icons.person,
-                  hint: "First Name",
+                  hint: "First Name".tr, // أضفنا .tr
                   controller: _firstNameController,
                 ),
                 const SizedBox(height: 15),
@@ -124,7 +124,7 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
                 // Last Name
                 buildInputField(
                   icon: Icons.person,
-                  hint: "Last Name",
+                  hint: "Last Name".tr, // أضفنا .tr
                   controller: _lastNameController,
                 ),
                 const SizedBox(height: 15),
@@ -132,7 +132,7 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
                 // Password
                 buildInputField(
                   icon: Icons.lock,
-                  hint: "Password",
+                  hint: "Password".tr, // أضفنا .tr
                   obscure: true,
                   controller: _passwordController,
                 ),
@@ -141,14 +141,14 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
                 // Confirm Password
                 buildInputField(
                   icon: Icons.lock_outline,
-                  hint: "Confirm Password",
+                  hint: "Confirm Password".tr, // أضفنا .tr
                   obscure: true,
                   controller: _confirmPasswordController,
                 ),
 
                 const SizedBox(height: 35),
 
-                // زر إنشاء حساب
+                // زر إنشاء حساب (التالي)
                 SizedBox(
                   height: 50,
                   width: 165,
@@ -156,17 +156,13 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
                     onPressed: checkInput,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF3B609E),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 10,
-                        horizontal: 60,
-                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      "Next  ",
-                      style: TextStyle(color: Colors.white, fontSize: 18),
+                    child: Text(
+                      "Next".tr, // أضفنا .tr (تم تنظيف المسافات الزائدة للنص)
+                      style: const TextStyle(color: Colors.white, fontSize: 18),
                     ),
                   ),
                 ),
@@ -177,17 +173,17 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      "Already have an account? ",
-                      style: TextStyle(color: Colors.white),
+                    Text(
+                      "Already have an account? ".tr, // أضفنا .tr
+                      style: const TextStyle(color: Colors.white),
                     ),
                     GestureDetector(
                       onTap: () {
                         Navigator.pop(context);
                       },
-                      child: const Text(
-                        "Login",
-                        style: TextStyle(
+                      child: Text(
+                        "Login".tr, // أضفنا .tr
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
@@ -206,6 +202,7 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
   }
 }
 
+// تعديل الدالة المساعدة لتقبل الترجمة في الـ hint
 Widget buildInputField({
   required IconData icon,
   required String hint,
@@ -225,7 +222,7 @@ Widget buildInputField({
       decoration: InputDecoration(
         icon: Icon(icon, color: Colors.white),
         border: InputBorder.none,
-        hintText: hint,
+        hintText: hint, // الـ hint تم تمريره جاهزاً بـ .tr من الأعلى
         hintStyle: const TextStyle(color: Colors.white70),
       ),
     ),

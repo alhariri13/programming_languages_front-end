@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:home/property_details_screen.dart';
+import 'package:get/get.dart'; 
 
 class FavoritesScreen extends StatefulWidget {
   final List<Map<String, dynamic>> favoriteProperties;
@@ -14,41 +16,23 @@ class FavoritesScreen extends StatefulWidget {
 
 class _FavoritesScreenState extends State<FavoritesScreen> {
   late List<Map<String, dynamic>> _currentFavorites;
-  final TextEditingController _searchController = TextEditingController();
-  
+
   final Color _cardColor = const Color(0xFF282A3A);
   final Color _blueAccent = Colors.blueAccent;
   final Color _backgroundColor = const Color(0xFF1B1C27);
 
-  List<Map<String, dynamic>> _filteredFavorites = [];
-
   @override
   void initState() {
     super.initState();
-    _currentFavorites = List.from(widget.favoriteProperties);
-    _filteredFavorites = _currentFavorites; 
-    _searchController.addListener(_filterFavorites);
+    _currentFavorites = List<Map<String, dynamic>>.from(widget.favoriteProperties);
   }
 
-  @override
-  void dispose() {
-    _searchController.removeListener(_filterFavorites);
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _filterFavorites() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      if (query.isEmpty) {
-        _filteredFavorites = _currentFavorites;
-      } else {
-        _filteredFavorites = _currentFavorites.where((property) {
-          final title = property['title'].toString().toLowerCase();
-          return title.contains(query);
-        }).toList();
-      }
-    });
+  void _navigateToDetails(Map<String, dynamic> property) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => PropertyDetailsScreen(property: property),
+      ),
+    );
   }
 
   void _confirmRemoval(BuildContext context, Map<String, dynamic> property, int index) {
@@ -57,12 +41,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: _cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: const Text(
-          'Confirm Removal',
+        title:  Text(
+          'Confirm Removal'.tr,
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         content: Text(
-          'Are you sure you want to remove "${property['title']}" from your favorites?',
+          'Are you sure you want to remove this item from your favorites?'.tr,
           style: const TextStyle(color: Colors.white70),
         ),
         actions: <Widget>[
@@ -70,34 +54,23 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             onPressed: () {
               Navigator.of(ctx).pop();
             },
-            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+            child:  Text('Cancel'.tr, style: TextStyle(color: Colors.white70)),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(ctx).pop();
-              _removeFavorite(index);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${property['title']} removed from favorites.'),
-                  backgroundColor: Colors.redAccent,
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
-            child: Text('Remove', style: TextStyle(color: Colors.redAccent)),
-          ),
+              final propertyIdToRemove = property['id'];
+              
+              setState(() {
+                _currentFavorites.removeWhere((prop) => prop['id'] == propertyIdToRemove);
+              });
+           
+  },
+  
+            child:  Text('Remove'.tr, style: TextStyle(color: Colors.redAccent)),),
         ],
       ),
     );
-  }
-
-  void _removeFavorite(int index) {
-    final propertyIdToRemove = _filteredFavorites[index]['id'];
-
-    setState(() {
-      _filteredFavorites.removeAt(index);
-      _currentFavorites.removeWhere((prop) => prop['id'] == propertyIdToRemove);
-    });
   }
 
   Widget _buildFeatureIcon(IconData icon, dynamic value) {
@@ -114,7 +87,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   }
 
   Widget _buildPropertyCard(BuildContext context, Map<String, dynamic> property, int index) {
-    const isFavorite = true;
     
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -122,7 +94,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
       elevation: 5,
       child: InkWell(
-        onTap: () {},
+        onTap: () => _navigateToDetails(property),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -208,7 +180,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
-  
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -220,11 +191,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       child: Scaffold(
         backgroundColor: _backgroundColor,
         appBar: AppBar(
-          title: const Text(
-            'My Favorites',
+          title:  Text(
+            'My Favorites'.tr,
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
-          backgroundColor:Color(0xFF3B609E), // لون شريط التطبيق
+          backgroundColor:const Color(0xFF3B609E), 
           iconTheme: const IconThemeData(color: Colors.white),
           elevation: 4, 
           leading: IconButton(
@@ -236,19 +207,18 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         ),
         body: Column(
           children: [
-            
             Expanded(
-              child: _filteredFavorites.isEmpty
-                  ? const Center(
+              child: _currentFavorites.isEmpty
+                  ?  Center(
                       child: Text(
-                        'No properties found in favorites.',
+                        'No properties found in favorites.'.tr,
                         style: TextStyle(color: Colors.white70, fontSize: 16),
                       ),
                     )
                   : Padding(
                       padding: const EdgeInsets.only(left: 10.0, right: 10.0, top: 10.0, bottom: 20),
                       child: GridView.builder(
-                        itemCount: _filteredFavorites.length,
+                        itemCount: _currentFavorites.length,
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           crossAxisSpacing: 15,
@@ -256,7 +226,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           childAspectRatio: 0.75,
                         ),
                         itemBuilder: (context, index) {
-                          return _buildPropertyCard(context, _filteredFavorites[index], index);
+                          return _buildPropertyCard(context, _currentFavorites[index], index);
                         },
                       ),
                     ),

@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:bbbb/home_page.dart';
+import 'package:get/get.dart'; // إضافة المكتبة
+import 'package:home/home_page.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:bbbb/login_screen.dart';
+import 'package:home/login_screen.dart';
 
-
-
-// يتم تحويلها إلى StatefulWidget لتتمكن من تخزين حالة التاريخ والصور
 class SecondSignUpScreen extends StatefulWidget {
   const SecondSignUpScreen({super.key});
 
@@ -15,13 +13,10 @@ class SecondSignUpScreen extends StatefulWidget {
 }
 
 class _NextPageState extends State<SecondSignUpScreen> {
-  // متغيرات لتخزين مسار الصورة المختارة لكل حقل
   File? _profileImage;
   File? _idImage;
-  // متغير جديد لتخزين تاريخ الميلاد
   DateTime? _dateOfBirth;
 
-  // دالة لاختيار صورة باستخدام image_picker
   Future<void> _pickImage(bool isProfileImage) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -37,21 +32,17 @@ class _NextPageState extends State<SecondSignUpScreen> {
     }
   }
 
-  // دالة جديدة لاختيار التاريخ باستخدام DatePicker
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate:
-          _dateOfBirth ??
-          DateTime.now(), // ابدأ بالتاريخ الحالي أو التاريخ المختار مسبقاً
-      firstDate: DateTime(1900), // أقدم تاريخ يمكن اختياره
-      lastDate: DateTime.now(), // لا يمكن اختيار تاريخ مستقبلي
+      initialDate: _dateOfBirth ?? DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
       builder: (context, child) {
         return Theme(
           data: ThemeData.dark().copyWith(
-            // تخصيص الثيم ليتناسب مع الخلفية الداكنة
             colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF2F66FF), // لون مميز للـ DatePicker
+              primary: Color(0xFF2F66FF),
               onPrimary: Colors.white,
               surface: Colors.black54,
               onSurface: Colors.white,
@@ -76,34 +67,26 @@ class _NextPageState extends State<SecondSignUpScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-
         automaticallyImplyLeading: false,
-        leading: TextButton(
+        leading: IconButton(
           onPressed: () {
             Navigator.pop(context);
           },
-          child: const Icon(Icons.arrow_back, color: Colors.white, size: 30),
+          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 30),
         ),
       ),
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // خلفية
           Image.asset("assets/background_image.jpg", fit: BoxFit.cover),
-
-          // طبقة تعتيم
           Container(color: const Color.fromARGB(100, 0, 0, 0)),
           SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 25),
             child: Column(
               children: [
                 const SizedBox(height: 90),
-
                 const Icon(Icons.home_outlined, size: 80, color: Colors.white),
-
                 const SizedBox(height: 13),
-
-                // عنوان التطبيق
                 const Text(
                   "TANZAN",
                   style: TextStyle(
@@ -112,58 +95,54 @@ class _NextPageState extends State<SecondSignUpScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
-                // عنوان إنشاء حساب
-                const Text(
-                  "Create Account",
-                  style: TextStyle(
+                Text(
+                  "Create Account".tr, // أضفنا .tr
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 22,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-
                 const SizedBox(height: 35),
 
                 // Email
-                buildInputField(icon: Icons.email, hint: "email"),
+                buildInputField(icon: Icons.email, hint: "email".tr), // أضفنا .tr
                 const SizedBox(height: 15),
 
                 // Phone
-                buildInputField(icon: Icons.phone, hint: "phone number"),
+                buildInputField(icon: Icons.phone, hint: "phone number".tr), // أضفنا .tr
                 const SizedBox(height: 15),
 
-                // حقل تاريخ الميلاد (الجديد)
+                // Date of Birth
                 _buildDatePickerField(
                   icon: Icons.calendar_today,
-                  hint: "Date of Birth",
+                  hint: "Date of Birth".tr, // أضفنا .tr
                   date: _dateOfBirth,
                   onTap: () => _selectDate(context),
                 ),
                 const SizedBox(height: 15),
 
-                // حقل اختيار "picture" (صورة الملف الشخصي)
+                // Profile Picture
                 _buildImagePickerField(
                   icon: Icons.image,
-                  hint: "Select Profile Picture",
+                  hint: "Select Profile Picture".tr, // أضفنا .tr
                   imageFile: _profileImage,
                   onTap: () => _pickImage(true),
                 ),
                 const SizedBox(height: 15),
 
-                // حقل اختيار "ID picture" (صورة الهوية)
+                // ID Picture
                 _buildImagePickerField(
                   icon: Icons.badge,
-                  hint: "Select ID Picture",
+                  hint: "Select ID Picture".tr, // أضفنا .tr
                   imageFile: _idImage,
                   onTap: () => _pickImage(false),
                 ),
 
                 const SizedBox(height: 35),
 
-                // زر إنشاء حساب
+                // Create Button
                 SizedBox(
                   height: 50,
                   width: 175,
@@ -178,30 +157,25 @@ class _NextPageState extends State<SecondSignUpScreen> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF3B609E),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 10,
-                        horizontal: 60,
-                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      "Create",
-                      style: TextStyle(color: Colors.white, fontSize: 18),
+                    child: Text(
+                      "Create".tr, // أضفنا .tr
+                      style: const TextStyle(color: Colors.white, fontSize: 18),
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 25),
 
-                // نص الانتقال لتسجيل الدخول
+                // Login Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      "Already have an account? ",
-                      style: TextStyle(color: Colors.white),
+                    Text(
+                      "Already have an account? ".tr, // أضفنا .tr
+                      style: const TextStyle(color: Colors.white),
                     ),
                     GestureDetector(
                       onTap: () {
@@ -212,9 +186,9 @@ class _NextPageState extends State<SecondSignUpScreen> {
                           ),
                         );
                       },
-                      child: const Text(
-                        "Login",
-                        style: TextStyle(
+                      child: Text(
+                        "Login".tr, // أضفنا .tr
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
@@ -222,7 +196,6 @@ class _NextPageState extends State<SecondSignUpScreen> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 25),
               ],
             ),
@@ -232,14 +205,12 @@ class _NextPageState extends State<SecondSignUpScreen> {
     );
   }
 
-  // دالة مساعدة لإنشاء حقل اختيار التاريخ (الجديد)
   Widget _buildDatePickerField({
     required IconData icon,
     required String hint,
     required DateTime? date,
     required VoidCallback onTap,
   }) {
-    // تنسيق التاريخ للعرض
     String displayDate = date != null
         ? "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}"
         : hint;
@@ -272,7 +243,6 @@ class _NextPageState extends State<SecondSignUpScreen> {
     );
   }
 
-  // دالة مساعدة لإنشاء حقل اختيار الصورة (كما هي)
   Widget _buildImagePickerField({
     required IconData icon,
     required String hint,
@@ -296,7 +266,7 @@ class _NextPageState extends State<SecondSignUpScreen> {
               child: Text(
                 imageFile == null
                     ? hint
-                    : "Image Selected: ${imageFile.path.split('/').last}",
+                    : "${'Image Selected'.tr}: ${imageFile.path.split('/').last}", // أضفنا ترجمة لحالة الاختيار
                 style: TextStyle(
                   color: imageFile == null ? Colors.white70 : Colors.white,
                   overflow: TextOverflow.ellipsis,
@@ -315,7 +285,6 @@ class _NextPageState extends State<SecondSignUpScreen> {
   }
 }
 
-// الدالة المساعدة لإنشاء حقول الإدخال النصية (كما هي)
 Widget buildInputField({
   required IconData icon,
   required String hint,

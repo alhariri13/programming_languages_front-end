@@ -1,44 +1,95 @@
 import 'package:flutter/material.dart';
-import 'dart:io'; // لاستخدام File
-import 'package:image_picker/image_picker.dart'; // لاستخدام image_picker
+import 'dart:io';
+import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+import 'apartment_controller.dart';
 
 class AddNewAppartmentScreen extends StatefulWidget {
-  const AddNewAppartmentScreen({super.key});
+  // هذه المتغيرات ضرورية لاستقبال البيانات عند الضغط على زر التعديل
+  final bool isEditing;
+  final Map<String, dynamic>? apartmentData;
+  final int? index;
+
+  const AddNewAppartmentScreen({
+    super.key, 
+    this.isEditing = false, 
+    this.apartmentData, 
+    this.index
+  });
 
   @override
   State<AddNewAppartmentScreen> createState() => _AddNewAppartmentScreenState();
 }
 
 class _AddNewAppartmentScreenState extends State<AddNewAppartmentScreen> {
-  // متغيرات الحالة
-  int _bedrooms = 2;
-  int _bathrooms = 1;
+  // تعريف الكنترولر للوصول لبيانات الشقق
+  final ApartmentController _controller = Get.find<ApartmentController>();
   
-  // **التعديل الجديد:** قائمة لتخزين ملفات الصور المختارة
+  // المتغيرات الخاصة بالقوائم والبيانات كما هي في تصميمك الأصلي
+  String? _selectedTitleType;
+  String? _selectedCity;
+  String? _selectedState;
+
+  final List<String> _titleOptions = ['Apartment', 'Villa', 'Chalet', 'Studio', 'Duplex'];
+  final List<String> _cityOptions = ['Latakia', 'Tartoos', 'Homs', 'Aleppo', 'Damascus', 'Idlib', 'Swidaa', 'Raqa', 'Hasaka', 'Diralzor', ' '];
+  
+  final Map<String, List<String>> _stateOptionsMap = {
+    'Latakia': ['Latakia (City)', 'Jableh', 'Al-Haffah', 'Slenfeh'],
+    'Tartoos': ['Tartus (City)', 'Baniyas', 'Safita', 'Dreikish'],
+    'Damascus': ['Al-Midan', 'Baramkeh', 'Kafar Souseh', 'Malki', 'Abu Rummaneh'],
+    'Homs': ['Homs (City)', 'Al-Qusayr', 'Tadmur', 'Al-Rastan'],
+    'Aleppo': ['Aleppo (City)', 'Manbij', 'Azaz', 'Al-Bab'],
+    'Idlib': ['Idlib (City)', 'Maarrat al-Numan', 'Jisr al-Shughur', 'Saraqib'],
+    'Swidaa': ['Swidaa (City)', 'Al-Sanamayn', 'Daraa', 'Busra al-Sham'],
+    'Raqa': ['Raqa (City)', 'Al-Thawrah', 'Al-Mansurah', 'Al-Jazrah'],
+    'Hasaka': ['Hasaka (City)', 'Qamishli', 'Al-Malikiyah', 'Al-Darbasiyah'],
+    'Diralzor': ['Diralzor (City)', 'Al-Mayadin', 'Al-Bukamal', 'Al-Shuhayl'],
+  };
+
+  int _bedrooms = 2;
+  int _bathrooms = 2;
   final List<File> _pickedImages = [];
   final ImagePicker _picker = ImagePicker();
 
-  // **الدالة الجديدة:** لاختيار صورة واحدة أو أكثر
-  Future<void> _pickImage() async {
-    final List<XFile> selectedImages = await _picker.pickMultiImage(
-      imageQuality: 70, // جودة الصورة لتقليل حجم الملف
-    );
+  // الكنترولرز الخاصة بحقول النص
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _areaController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
 
+  @override
+  void initState() {
+    super.initState();
+    // تعبئة البيانات تلقائياً إذا كنا في وضع التعديل
+    if (widget.isEditing && widget.apartmentData != null) {
+      _selectedTitleType = widget.apartmentData!['title'];
+      _priceController.text = widget.apartmentData!['price']?.toString().replaceAll(' \$', '') ?? '';
+      _descriptionController.text = widget.apartmentData!['description'] ?? '';
+      _areaController.text = widget.apartmentData!['area'] ?? '';
+      _addressController.text = widget.apartmentData!['address'] ?? '';
+      _bedrooms = widget.apartmentData!['bedrooms'] ?? 2;
+      _bathrooms = widget.apartmentData!['bathrooms'] ?? 2;
+    }
+  }
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    _areaController.dispose();
+    _priceController.dispose();
+    _addressController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final List<XFile> selectedImages = await _picker.pickMultiImage(imageQuality: 70);
     if (selectedImages.isNotEmpty) {
       setState(() {
         for (var xFile in selectedImages) {
-          // نضيف الصورة كـ File إلى القائمة
           _pickedImages.add(File(xFile.path));
         }
       });
     }
-  }
-  
-  // **دالة لحذف صورة** (لإضافة وظيفة متكاملة)
-  void _removeImage(int index) {
-    setState(() {
-      _pickedImages.removeAt(index);
-    });
   }
 
   @override
@@ -47,33 +98,54 @@ class _AddNewAppartmentScreenState extends State<AddNewAppartmentScreen> {
       extendBodyBehindAppBar: true,
       backgroundColor: const Color(0xFF1B1C27),
       appBar: _buildAppBar(context),
-      
       body: Stack(
         children: <Widget>[
-          _buildBackgroundWithBlur(),
-          
+          _buildBackground(),
           SingleChildScrollView(
-            padding: const EdgeInsets.only(top: 100, left: 18.0, right: 18.0, bottom: 40.0), 
+            padding: const EdgeInsets.only(top: 100, left: 18.0, right: 18.0, bottom: 40.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                // **تحديث استدعاء قسم الصور**
+                _buildSectionTitle('Property Information'),
+                _buildDropdownField<String>(
+                  label: 'Property Type (Title)',
+                  value: _selectedTitleType,
+                  hint: 'Select Property Type',
+                  items: _titleOptions,
+                  onChanged: (newValue) => setState(() => _selectedTitleType = newValue),
+                  icon: Icons.home_work,
+                ),
+                _buildMultiLineTextField('Description', hint: 'Detail all features and amenities', controller: _descriptionController),
+                const SizedBox(height: 20),
+                _buildSectionTitle('Property Photos'),
                 _buildPhotosSection(),
                 const SizedBox(height: 30),
-                _buildSectionTitle('Core Details'),
-                _buildTextField('Property Title', hint: 'Enter an attractive title'),
-                _buildMultiLineTextField('Description', hint: 'Detail all features and amenities'),
-                _buildDropdownField(),
-                _buildTextField('Location', icon: Icons.location_on, hint: 'Select address or location'),
+                _buildSectionTitle('Location Details'),
+                _buildDropdownField<String>(
+                  label: 'State',
+                  value: _selectedCity,
+                  hint: 'Select State',
+                  items: _cityOptions,
+                  onChanged: (newValue) => setState(() { _selectedCity = newValue; _selectedState = null; }),
+                  icon: Icons.location_city,
+                ),
+                _buildDropdownField<String>(
+                  label: 'City',
+                  value: _selectedState,
+                  hint: _selectedCity == null ? 'Select State first' : 'Select City',
+                  items: _selectedCity != null ? (_stateOptionsMap[_selectedCity] ?? []) : [],
+                  onChanged: (newValue) => setState(() => _selectedState = newValue),
+                  icon: Icons.landscape,
+                  isEnabled: _selectedCity != null,
+                ),
+                _buildTextField('Address (Major Area)', hint: 'Enter street name or major landmark', icon: Icons.location_on, controller: _addressController),
                 const SizedBox(height: 30),
                 _buildSectionTitle('Features & Specs'),
                 _buildFeaturesRow(),
-                _buildTextField('Area (Sq.ft)', hint: 'Enter total area', keyboardType: TextInputType.number),
+                _buildTextField('Area (m²)', hint: 'Total area', keyboardType: TextInputType.number, controller: _areaController),
                 const SizedBox(height: 30),
                 _buildSectionTitle('Pricing'),
-                _buildPriceField(),
-                
-                
+                _buildPriceField(controller: _priceController),
                 const SizedBox(height: 40),
               ],
             ),
@@ -83,386 +155,190 @@ class _AddNewAppartmentScreenState extends State<AddNewAppartmentScreen> {
     );
   }
 
-  // ************ الدوال المساعدة (Helper Methods) ************
-  
-  // 1. الشريط العلوي (AppBar)
   AppBar _buildAppBar(BuildContext context) {
     return AppBar(
-      backgroundColor: Colors.transparent, 
+      backgroundColor: Colors.transparent,
       elevation: 0,
-      leadingWidth: 100, 
-
-      // **زر Cancel**
+      leadingWidth: 100,
       leading: Padding(
-        padding: const EdgeInsets.only(left:23.5, top:5.0, bottom: 8.0), 
+        padding: const EdgeInsets.only(left: 23.5, top: 5.0, bottom: 8.0),
         child: TextButton(
           onPressed: () => Navigator.pop(context),
-          style: TextButton.styleFrom(
-            backgroundColor: const Color(0xFF3B609E), 
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14), 
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
-          ),
-          child: const Text('Cancel', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)), 
+          style: TextButton.styleFrom(backgroundColor: const Color(0xFF3B609E), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+          child: const Text('Cancel', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
         ),
       ),
-      title: const Text('Add new appartment', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+      title: Text(widget.isEditing ? 'Edit Apartment' : 'Add new appartment', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
       centerTitle: true,
       actions: <Widget>[
-        // زر Post
         Padding(
           padding: const EdgeInsets.only(right: 18.0),
           child: TextButton(
             onPressed: () {
-              // منطق نشر العقار
+              // حفظ البيانات وإرسالها للكنترولر
+              final data = {
+                'title': _selectedTitleType ?? 'Apartment',
+                'price': '${_priceController.text} \$',
+                'image': _pickedImages.isNotEmpty ? _pickedImages[0].path : (widget.isEditing ? widget.apartmentData!['image'] : 'assets/background_image.jpg'),
+                'isLocal': _pickedImages.isNotEmpty || (widget.isEditing && widget.apartmentData!['isLocal'] == true),
+                'description': _descriptionController.text,
+                'address': _addressController.text,
+                'bedrooms': _bedrooms,
+                'bathrooms': _bathrooms,
+                'area': _areaController.text,
+              };
+
+              if (widget.isEditing) {
+                _controller.updateApartment(widget.index!, data);
+              } else {
+                _controller.addApartment(data);
+              }
+              Navigator.pop(context);
             },
-            style: TextButton.styleFrom(
-              backgroundColor: const Color(0xFF3B609E),
-              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: const Text('Post', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            style: TextButton.styleFrom(backgroundColor: const Color(0xFF3B609E), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            child: Text(widget.isEditing ? 'Update' : 'Post', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ),
       ],
     );
   }
 
-  // خلفية مع صورة وتعتيم خفيف (Opacity)
-  Widget _buildBackgroundWithBlur() {
-    return Container(
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage('assets/background_image.jpg'),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Container(
-        color: const Color(0xAA1B1C27),
-      ),
-    );
-  }
+  // --- دوال الـ UI المساعدة كما صممتها أنت ---
+  Widget _buildBackground() => Container(color: const Color(0xFF1B1C27));
 
-  // **2. قسم الصور (المحدث)**
   Widget _buildPhotosSection() {
     return SizedBox(
       height: 120,
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: <Widget>[
-          // **1. زر الإضافة (يستدعي الدالة الجديدة)**
           _buildAddPhotoButton(),
           const SizedBox(width: 15),
-          
-          // **2. عرض الصور المختارة**
-          ..._pickedImages.asMap().entries.map((entry) {
-            int index = entry.key;
-            File file = entry.value;
-            return _buildPhotoCard(file, index);
-          }).toList(),
-
-          // يمكن إضافة أماكن صور فارغة إضافية هنا إذا أردت
-          if (_pickedImages.length < 5) ...[
-            _buildPhotoPlaceholder(),
-            const SizedBox(width: 15),
-          ],
+          ..._pickedImages.asMap().entries.map((e) => _buildPhotoCard(e.value, e.key)).toList(),
+          if (_pickedImages.isEmpty) _buildPhotoPlaceholder(),
         ],
       ),
     );
   }
 
-  // **البطاقة التي تعرض الصورة المختارة مع زر للحذف**
   Widget _buildPhotoCard(File file, int index) {
     return Padding(
       padding: const EdgeInsets.only(right: 15.0),
       child: Stack(
         children: [
-          Container(
-            width: 120,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
-              // عرض الصورة من الملف
-              image: DecorationImage(
-                image: FileImage(file),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          // زر الحذف
-          Positioned(
-            top: 5,
-            right: 5,
-            child: InkWell(
-              onTap: () => _removeImage(index),
-              child: const CircleAvatar(
-                radius: 12,
-                backgroundColor: Colors.red,
-                child: Icon(Icons.close, size: 16, color: Colors.white),
-              ),
-            ),
-          ),
+          Container(width: 120, decoration: BoxDecoration(borderRadius: BorderRadius.circular(15), image: DecorationImage(image: FileImage(file), fit: BoxFit.cover))),
+          Positioned(top: 5, right: 5, child: InkWell(onTap: () => setState(() => _pickedImages.removeAt(index)), child: const CircleAvatar(radius: 12, backgroundColor: Colors.red, child: Icon(Icons.close, size: 16, color: Colors.white)))),
         ],
       ),
     );
   }
 
-  // **زر إضافة صور (يستدعي دالة اختيار الصورة)**
   Widget _buildAddPhotoButton() {
     return GestureDetector(
-      onTap: _pickImage, // **الاستدعاء الجديد هنا**
+      onTap: _pickImage,
       child: Container(
         width: 120,
-        decoration: BoxDecoration(
-          color: const Color(0xFF282A3A).withOpacity(0.8),
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: Colors.blue, width: 2),
-        ),
-        child: const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Icon(Icons.add_a_photo, color: Colors.blue, size: 30),
-            SizedBox(height: 5),
-            Text('Upload Photos', style: TextStyle(color: Colors.blue, fontSize: 13)),
-          ],
-        ),
+        decoration: BoxDecoration(color: const Color(0xFF282A3A).withOpacity(0.8), borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.blue, width: 2)),
+        child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[Icon(Icons.add_a_photo, color: Colors.blue, size: 30), Text('Upload Photos', style: TextStyle(color: Colors.blue, fontSize: 13))]),
       ),
     );
   }
 
-  // مكان صورة فارغ
-  Widget _buildPhotoPlaceholder() {
-    return Container(
-      width: 120,
-      margin: const EdgeInsets.only(right: 15),
-      decoration: BoxDecoration(
-        color: const Color(0xFF282A3A).withOpacity(0.8),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: const Center(
-        child: Icon(Icons.image_outlined, color: Colors.grey, size: 30),
-      ),
-    );
-  }
+  Widget _buildPhotoPlaceholder() => Container(width: 120, decoration: BoxDecoration(color: const Color(0xFF282A3A).withOpacity(0.8), borderRadius: BorderRadius.circular(15)), child: const Center(child: Icon(Icons.image_outlined, color: Colors.grey, size: 30)));
 
-  // باقي الدوال المساعدة (بدون تغيير كبير)
-
-  Widget _buildTextField(String label, {IconData? icon, String? hint, TextInputType keyboardType = TextInputType.text}) {
-    // ... (نفس التنفيذ السابق)
+  Widget _buildTextField(String label, {IconData? icon, String? hint, TextInputType keyboardType = TextInputType.text, required TextEditingController controller}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            decoration: BoxDecoration(
-              color: const Color(0xFF282A3A).withOpacity(0.8),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: TextField(
-              keyboardType: keyboardType,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: hint,
-                hintStyle: const TextStyle(color: Colors.grey),
-                border: InputBorder.none,
-                prefixIcon: icon != null ? Icon(icon, color: Colors.grey) : null,
-                contentPadding: icon == null ? const EdgeInsets.symmetric(vertical: 15) : null,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMultiLineTextField(String label, {String? hint}) {
-    // ... (نفس التنفيذ السابق)
-     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            decoration: BoxDecoration(
-              color: const Color(0xFF282A3A).withOpacity(0.8),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: TextField(
-              style: const TextStyle(color: Colors.white),
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: hint,
-                hintStyle: const TextStyle(color: Colors.grey),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDropdownField() {
-    // ... (نفس التنفيذ السابق)
-     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Property Type', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            decoration: BoxDecoration(
-              color: const Color(0xFF282A3A).withOpacity(0.8),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: DropdownButtonFormField<String>(
-              isExpanded: true,
-              value: 'Apartment',
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 8),
-              ),
-              dropdownColor: const Color(0xFF282A3A),
-              style: const TextStyle(color: Colors.white),
-              icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
-              items: <String>['Apartment', 'Villa', 'Office', 'Commercial']
-                  .map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                // ...
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  // حقل زيادة/نقصان الأعداد (Stepper)
-  Widget _buildStepperField(String label, IconData icon, int currentValue, Function(int) onChanged) {
-    // ... (نفس التنفيذ السابق)
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
         const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            color: const Color(0xFF282A3A).withOpacity(0.8),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: Colors.grey, size: 20),
-              const SizedBox(width: 5),
-              Text('$currentValue', style: const TextStyle(color: Colors.white, fontSize: 16)),
-              const Spacer(),
-              InkWell(
-                onTap: () {
-                  if (currentValue > 0) {
-                    onChanged(currentValue - 1);
-                  }
-                },
-                child: Icon(Icons.remove_circle_outline, color: currentValue > 0 ? Colors.redAccent : Colors.grey),
-              ),
-              const SizedBox(width: 8),
-              InkWell(
-                onTap: () {
-                  onChanged(currentValue + 1);
-                },
-                child: const Icon(Icons.add_circle_outline, color: Colors.blue),
-              ),
-            ],
+          padding: const EdgeInsets.symmetric(horizontal: 15),
+          decoration: BoxDecoration(color: const Color(0xFF282A3A).withOpacity(0.8), borderRadius: BorderRadius.circular(12)),
+          child: TextField(controller: controller, keyboardType: keyboardType, style: const TextStyle(color: Colors.white), decoration: InputDecoration(hintText: hint, hintStyle: const TextStyle(color: Colors.grey), border: InputBorder.none, prefixIcon: icon != null ? Icon(icon, color: Colors.grey) : null)),
+        ),
+      ]),
+    );
+  }
+
+  Widget _buildDropdownField<T>({required String label, required T? value, required String hint, required List<T> items, required ValueChanged<T?> onChanged, required IconData icon, bool isEnabled = true}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10.0),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 15),
+          decoration: BoxDecoration(color: isEnabled ? const Color(0xFF282A3A).withOpacity(0.8) : const Color(0xFF282A3A).withOpacity(0.4), borderRadius: BorderRadius.circular(12)),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<T>(value: value, hint: Text(hint, style: TextStyle(color: isEnabled ? Colors.grey : Colors.grey.withOpacity(0.5))), isExpanded: true, dropdownColor: const Color(0xFF282A3A), style: const TextStyle(color: Colors.white), items: items.map<DropdownMenuItem<T>>((T item) => DropdownMenuItem<T>(value: item, child: Text(item.toString()))).toList(), onChanged: isEnabled ? onChanged : null),
           ),
         ),
-      ],
+      ]),
     );
   }
 
-  // صف خصائص (غرف نوم/حمامات)
+  Widget _buildMultiLineTextField(String label, {String? hint, required TextEditingController controller}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10.0),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+        const SizedBox(height: 8),
+        Container(padding: const EdgeInsets.symmetric(horizontal: 15), decoration: BoxDecoration(color: const Color(0xFF282A3A).withOpacity(0.8), borderRadius: BorderRadius.circular(12)), child: TextField(controller: controller, style: const TextStyle(color: Colors.white), maxLines: 4, decoration: InputDecoration(hintText: hint, hintStyle: const TextStyle(color: Colors.grey), border: InputBorder.none))),
+      ]),
+    );
+  }
+
   Widget _buildFeaturesRow() {
-    // ... (نفس التنفيذ السابق)
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10.0),
-      child: Row(
-        children: [
-          Expanded(child: _buildStepperField(
-            'Bedrooms', 
-            Icons.king_bed, 
-            _bedrooms, 
-            (newValue) { setState(() => _bedrooms = newValue); }
-          )),
-          const SizedBox(width: 15),
-          Expanded(child: _buildStepperField(
-            'Bathrooms', 
-            Icons.bathtub, 
-            _bathrooms, 
-            (newValue) { setState(() => _bathrooms = newValue); }
-          )),
-        ],
-      ),
+      child: Row(children: [
+        Expanded(child: _buildStepperField('Bedrooms', Icons.king_bed, _bedrooms, (val) => setState(() => _bedrooms = val))),
+        const SizedBox(width: 15),
+        Expanded(child: _buildStepperField('Bathrooms', Icons.bathtub, _bathrooms, (val) => setState(() => _bathrooms = val))),
+      ]),
     );
   }
 
-  Widget _buildPriceField() {
-    // ... (نفس التنفيذ السابق)
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Price', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            decoration: BoxDecoration(
-              color: const Color(0xFF282A3A).withOpacity(0.8),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const TextField(
-              keyboardType: TextInputType.number,
-              style: TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Enter total price',
-                hintStyle: TextStyle(color: Colors.grey),
-                border: InputBorder.none,
-                suffixText: '\$',
-                suffixStyle: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
-                contentPadding: EdgeInsets.symmetric(vertical: 15),
-              ),
-            ),
-          ),
-        ],
+  Widget _buildStepperField(String label, IconData icon, int currentValue, Function(int) onChanged, {int minLimit = 1, int maxLimit = 10}) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+      const SizedBox(height: 8),
+      Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(color: const Color(0xFF282A3A).withOpacity(0.8), borderRadius: BorderRadius.circular(12)),
+        child: Row(children: [
+          Icon(icon, color: Colors.grey, size: 20),
+          const SizedBox(width: 5),
+          Text('$currentValue', style: const TextStyle(color: Colors.white)),
+          const Spacer(),
+          InkWell(onTap: () => currentValue > minLimit ? onChanged(currentValue - 1) : null, child: const Icon(Icons.remove_circle_outline, color: Colors.redAccent)),
+          const SizedBox(width: 8),
+          InkWell(onTap: () => currentValue < maxLimit ? onChanged(currentValue + 1) : null, child: const Icon(Icons.add_circle_outline, color: Colors.blue)),
+        ]),
       ),
-    );
+    ]);
   }
 
+  Widget _buildPriceField({required TextEditingController controller}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10.0),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('Price', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 15),
+          decoration: BoxDecoration(color: const Color(0xFF282A3A).withOpacity(0.8), borderRadius: BorderRadius.circular(12)),
+          child: TextField(controller: controller, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(hintText: 'Enter daily rental price', suffixText: '\$/Day', border: InputBorder.none)),
+        ),
+      ]),
+    );
+  }
 
   Widget _buildSectionTitle(String title) {
-    // ... (نفس التنفيذ السابق)
     return Padding(
       padding: const EdgeInsets.only(bottom: 10.0, top: 10.0),
-      child: Text(
-        title,
-        style: const TextStyle(
-          color: Colors.blue,
-          fontSize: 18,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
+      child: Text(title, style: const TextStyle(color: Colors.blue, fontSize: 18, fontWeight: FontWeight.w900)),
     );
   }
 }

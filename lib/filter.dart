@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 enum Governorate {
   tartoos,
@@ -15,6 +16,7 @@ enum Governorate {
 
 class Filter extends StatefulWidget {
   const Filter({super.key});
+
   @override
   State<Filter> createState() {
     return _FilterState();
@@ -28,8 +30,9 @@ class _FilterState extends State<Filter> {
 
   Governorate _selectedGovernorate = Governorate.damascus;
 
-  String _getGovernorateName(Governorate governorate) {
-    return governorate.name[0].toUpperCase() + governorate.name.substring(1);
+  // دالة محسنة لجلب الاسم المترجم مباشرة من الـ enum
+  String _getTranslatedGovernorate(Governorate governorate) {
+    return governorate.name.tr; 
   }
 
   InputDecoration _getInputDecoration(String labelText, {Widget? prefix}) {
@@ -39,6 +42,7 @@ class _FilterState extends State<Filter> {
       prefix: prefix,
       filled: true,
       fillColor: _cardColor,
+      counterStyle: const TextStyle(color: Colors.white70), // لتلوين عداد الحروف
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(20),
         borderSide: BorderSide.none,
@@ -53,7 +57,7 @@ class _FilterState extends State<Filter> {
   @override
   Widget build(BuildContext context) {
     final keyBoaredspace = MediaQuery.of(context).viewInsets.bottom;
-    
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
@@ -64,12 +68,7 @@ class _FilterState extends State<Filter> {
         ),
       ),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          16,
-          16,
-          (keyBoaredspace + 16),
-        ),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, (keyBoaredspace + 16)),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -77,9 +76,9 @@ class _FilterState extends State<Filter> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Settings / Filter',
-                    style: TextStyle(
+                  Text(
+                    'Settings / Filter'.tr,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -94,40 +93,11 @@ class _FilterState extends State<Filter> {
                 ],
               ),
               const Divider(color: Colors.white12, height: 25),
-
-              TextField(
-                style: const TextStyle(color: Colors.white),
-                decoration: _getInputDecoration('City'),
-              ),
-              const SizedBox(height: 20),
-
-              TextField(
-                style: const TextStyle(color: Colors.white),
-                maxLength: 3,
-                keyboardType: TextInputType.number,
-                decoration: _getInputDecoration(
-                  'Price',
-                  prefix: Text('\$', style: TextStyle(color: _blueAccent)),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              TextField(
-                style: const TextStyle(color: Colors.white),
-                decoration: _getInputDecoration('Space'),
-              ),
               const SizedBox(height: 20),
               
-              TextField(
-                style: const TextStyle(color: Colors.white),
-                maxLength: 1,
-                keyboardType: TextInputType.number,
-                decoration: _getInputDecoration('Number of rooms'),
-              ),
-              const SizedBox(height: 20),
-
+              // قائمة المحافظات المترجمة
               InputDecorator(
-                decoration: _getInputDecoration('Governorate'),
+                decoration: _getInputDecoration('Governorate'.tr),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<Governorate>(
                     borderRadius: BorderRadius.circular(20),
@@ -136,26 +106,59 @@ class _FilterState extends State<Filter> {
                     value: _selectedGovernorate,
                     icon: Icon(Icons.arrow_drop_down, color: _blueAccent),
                     style: const TextStyle(color: Colors.white, fontSize: 16),
-                    items: Governorate.values
-                        .map(
-                          (governorate) => DropdownMenuItem(
-                            value: governorate,
-                            child: Text(governorate.name.toUpperCase()),
-                          ),
-                        )
-                        .toList(),
+                    items: Governorate.values.map((governorate) {
+                      return DropdownMenuItem(
+                        value: governorate,
+                        child: Text(_getTranslatedGovernorate(governorate)),
+                      );
+                    }).toList(),
                     onChanged: (value) {
-                      if (value == null) {
-                        return;
+                      if (value != null) {
+                        setState(() {
+                          _selectedGovernorate = value;
+                        });
                       }
-                      setState(() {
-                        _selectedGovernorate = value;
-                      });
                     },
                   ),
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
+
+              TextField(
+                style: const TextStyle(color: Colors.white),
+                decoration: _getInputDecoration('City'.tr),
+              ),
+              const SizedBox(height: 20),
+
+              TextField(
+                style: const TextStyle(color: Colors.white),
+                maxLength: 10, // زدت الطول للسعر ليكون منطقي أكثر
+                keyboardType: TextInputType.number,
+                decoration: _getInputDecoration(
+                  'Price'.tr,
+                  prefix: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Text('\$', style: TextStyle(color: _blueAccent, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              TextField(
+                style: const TextStyle(color: Colors.white),
+                keyboardType: TextInputType.number,
+                decoration: _getInputDecoration('Space'.tr),
+              ),
+              const SizedBox(height: 20),
+
+              TextField(
+                style: const TextStyle(color: Colors.white),
+                maxLength: 2,
+                keyboardType: TextInputType.number,
+                decoration: _getInputDecoration('Number of rooms'.tr),
+              ),
+              
+              const SizedBox(height: 40),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -163,7 +166,7 @@ class _FilterState extends State<Filter> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.pop(context);
+                        Navigator.of(context).pop();
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _blueAccent,
@@ -172,9 +175,13 @@ class _FilterState extends State<Filter> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        'Okay',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                      child: Text(
+                        'Okay'.tr,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -182,7 +189,7 @@ class _FilterState extends State<Filter> {
                   Expanded(
                     child: TextButton(
                       onPressed: () {
-                        Navigator.pop(context);
+                        Navigator.of(context).pop();
                       },
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 15),
@@ -192,8 +199,11 @@ class _FilterState extends State<Filter> {
                         ),
                       ),
                       child: Text(
-                        'Cancel',
-                        style: TextStyle(fontSize: 16, color: Colors.grey.shade400),
+                        'Cancel'.tr,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey.shade400,
+                        ),
                       ),
                     ),
                   ),

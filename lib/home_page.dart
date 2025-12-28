@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:bbbb/add_new_appartment_screen.dart';
-import 'package:bbbb/filter.dart';
-import 'package:bbbb/profile_screen.dart';
-import 'package:bbbb/notification_screen.dart'; 
-import 'package:bbbb/search_screen.dart'; 
-import 'package:bbbb/favorites_screen.dart'; 
-// 🌟 الاستيراد الجديد لصفحة التفاصيل
-import 'package:bbbb/property_details_screen.dart'; 
+import 'package:home/add_new_appartment_screen.dart';
+import 'package:home/filter.dart';
+import 'package:home/profile_screen.dart';
+import 'package:home/notification_screen.dart'; 
+import 'package:home/search_screen.dart'; 
+import 'package:home/favorites_screen.dart'; 
+import 'package:home/property_details_screen.dart'; 
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -297,7 +296,16 @@ class _HomePageState extends State<HomePage> {
             
             IconButton(
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()));
+               Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => const ProfileScreen(
+      userName: "زين ", // مرر الاسم من قاعدة البيانات هنا
+      userEmail: "ايميل", 
+      profileImageUrl: "assets/tanzan.png"  
+    ),
+  ),
+);  
               },
               icon: const Icon(Icons.person_outline, color: Colors.white70),
               iconSize: 30,
