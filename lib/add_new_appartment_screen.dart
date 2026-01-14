@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:tanzan/providers/ip_provider.dart';
 import 'package:tanzan/providers/token_provider.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -122,7 +123,8 @@ class _AddNewAppartmentScreenState
 
   void _addApartmentToDataBase() async {
     final token = ref.watch(tokenProvider);
-    final url = Uri.http('192.168.1.106:8000', 'api/user/apartments');
+    final ip = ref.read(ipProvider.notifier).state;
+    final url = Uri.http('$ip:8000', 'api/user/apartments');
 
     var request = http.MultipartRequest('POST', url);
 

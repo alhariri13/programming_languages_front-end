@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:tanzan/edit_apartment_screen.dart';
+import 'package:tanzan/providers/ip_provider.dart';
 import 'dart:convert';
 import 'package:tanzan/providers/token_provider.dart';
 
-const String baseUrl = "http://192.168.1.106:8000";
 
 /// --- Apartments Provider ---
 final apartmentsProvider =
@@ -15,9 +15,10 @@ final apartmentsProvider =
       if (token == null || token.isEmpty) {
         throw Exception("Missing auth token. Please log in.");
       }
+      final ip = ref.read(ipProvider.notifier).state;
 
       final response = await http.get(
-        Uri.parse("$baseUrl/api/user/ownerapartments"),
+        Uri.parse("http://$ip:8000/api/user/ownerapartments"),
         headers: {
           "Accept": "application/json",
           "Authorization": "Bearer $token",
@@ -114,7 +115,8 @@ class ShowMyApartmentScreen extends ConsumerWidget {
     if (images is List &&
         images.isNotEmpty &&
         images[0]['image_path'] != null) {
-      imageUrl = "$baseUrl/storage/${images[0]['image_path']}";
+      final ip = ref.read(ipProvider.notifier).state;
+      imageUrl = "http://$ip:8000/storage/${images[0]['image_path']}";
     }
 
     return Card(
@@ -228,9 +230,10 @@ class ShowMyApartmentScreen extends ConsumerWidget {
                   if (confirm == true) {
                     try {
                       final token = ref.read(tokenProvider);
+                      final ip = ref.read(ipProvider.notifier).state;
                       final response = await http.delete(
                         Uri.parse(
-                          "$baseUrl/api/user/apartments/${property['id']}",
+                          "http://$ip:8000/api/user/apartments/${property['id']}",
                         ),
                         headers: {
                           "Accept": "application/json",

@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart'; // إضافة المكتبة
@@ -5,8 +6,9 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:tanzan/login_screen.dart';
+import 'package:tanzan/providers/ip_provider.dart';
 
-class SecondSignUpScreen extends StatefulWidget {
+class SecondSignUpScreen extends ConsumerStatefulWidget {
   const SecondSignUpScreen({
     super.key,
     required this.firstName,
@@ -17,10 +19,10 @@ class SecondSignUpScreen extends StatefulWidget {
   final String lastName;
   final String password;
   @override
-  State<SecondSignUpScreen> createState() => _NextPageState();
+  ConsumerState<SecondSignUpScreen> createState() => _NextPageState();
 }
 
-class _NextPageState extends State<SecondSignUpScreen> {
+class _NextPageState extends ConsumerState<SecondSignUpScreen> {
   final _emailController = TextEditingController();
   final _phoneNumberController = TextEditingController();
 
@@ -75,7 +77,8 @@ class _NextPageState extends State<SecondSignUpScreen> {
   @override
   Widget build(BuildContext context) {
     void register() async {
-      final url = Uri.parse("http://192.168.1.106:8000/api/register");
+      final ip = ref.read(ipProvider.notifier).state;
+      final url = Uri.parse("http://$ip:8000/api/register");
 
       var request = http.MultipartRequest("POST", url);
 

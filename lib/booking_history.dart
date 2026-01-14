@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tanzan/providers/ip_provider.dart';
 import 'package:tanzan/providers/token_provider.dart';
 import 'package:tanzan/booking_history_item.dart';
 
@@ -18,8 +19,6 @@ class _BookingHistoryScreenState extends ConsumerState<BookingHistoryScreen> {
   List<dynamic> _bookings = [];
   bool _loading = true;
 
-  static const String baseUrl = 'http://192.168.1.106:8000';
-
   @override
   void initState() {
     super.initState();
@@ -29,9 +28,9 @@ class _BookingHistoryScreenState extends ConsumerState<BookingHistoryScreen> {
   Future<void> _fetchBookings() async {
     try {
       final token = ref.read(tokenProvider);
-
+      final ip = ref.read(ipProvider.notifier).state;
       final response = await http.get(
-        Uri.parse('$baseUrl/api/user/rentals'),
+        Uri.parse('http://$ip:8000/api/user/rentals'),
         headers: {
           'Accept': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
@@ -82,9 +81,9 @@ class _BookingHistoryScreenState extends ConsumerState<BookingHistoryScreen> {
   }) async {
     try {
       final token = ref.read(tokenProvider);
-
+      final ip = ref.read(ipProvider.notifier).state;
       final response = await http.put(
-        Uri.parse('$baseUrl/api/user/rentals/$bookingId/update'),
+        Uri.parse('http://$ip:8000/api/user/rentals/$bookingId/update'),
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -114,9 +113,9 @@ class _BookingHistoryScreenState extends ConsumerState<BookingHistoryScreen> {
   Future<void> _cancelBooking(int bookingId, String title) async {
     try {
       final token = ref.read(tokenProvider);
-
+      final ip = ref.read(ipProvider.notifier).state;
       final response = await http.post(
-        Uri.parse('$baseUrl/api/user/rentals/$bookingId/cancel'),
+        Uri.parse('http://$ip:8000/api/user/rentals/$bookingId/cancel'),
         headers: {
           'Accept': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tanzan/home_page.dart';
 import 'package:tanzan/first_sign_up_screen.dart';
 import 'package:tanzan/providers/token_provider.dart';
+import 'package:tanzan/providers/ip_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -21,7 +22,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
 
   Future<void> login() async {
-    final url = Uri.http("192.168.1.106:8000", "/api/login");
+    final ip = ref.read(ipProvider.notifier).state;
+    final url = Uri.http("$ip:8000", "/api/login");
+    print(ip);
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},

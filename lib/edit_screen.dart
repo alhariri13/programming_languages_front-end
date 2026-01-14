@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tanzan/profile_screen.dart';
+import 'package:tanzan/providers/ip_provider.dart';
 import 'package:tanzan/providers/token_provider.dart';
 
 class EditScreen extends StatefulWidget {
@@ -74,9 +75,9 @@ class _EditScreenState extends State<EditScreen> {
       Navigator.pop(context);
       return;
     }
-
+    final ip = ref.read(ipProvider.notifier).state;
     // Otherwise send update request
-    final url = Uri.http('192.168.1.106:8000', 'api/update-profile');
+    final url = Uri.http('$ip:8000', 'api/update-profile');
     final request = http.MultipartRequest('POST', url);
 
     request.headers['Authorization'] = 'Bearer $token';

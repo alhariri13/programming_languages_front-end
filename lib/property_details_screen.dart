@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:tanzan/providers/ip_provider.dart';
 import 'dart:convert';
 import 'package:tanzan/providers/token_provider.dart';
 
@@ -34,11 +35,9 @@ class _PropertyDetailsScreenState extends ConsumerState<PropertyDetailsScreen> {
   Future<void> _fetchApartment() async {
     try {
       final token = ref.read(tokenProvider);
-
+      final ip = ref.read(ipProvider.notifier).state;
       final response = await http.get(
-        Uri.parse(
-          'http://192.168.1.106:8000/api/user/apartments/${widget.apartmentId}',
-        ),
+        Uri.parse('http://$ip:8000/api/user/apartments/${widget.apartmentId}'),
         headers: {
           'Accept': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
@@ -125,8 +124,9 @@ class _PropertyDetailsScreenState extends ConsumerState<PropertyDetailsScreen> {
                           ),
                         );
                       }
+                      final ip = ref.read(ipProvider.notifier).state;
                       final src =
-                          'http://192.168.1.106:8000/storage/${images[index]['image_path']}';
+                          'http://$ip:8000/storage/${images[index]['image_path']}';
                       return Image.network(
                         src,
                         fit: BoxFit.cover,
@@ -236,10 +236,10 @@ class _PropertyDetailsCardState extends ConsumerState<PropertyDetailsCard> {
     try {
       final int apartmentId = widget.property['id'];
       final token = ref.read(tokenProvider);
-
+      final ip = ref.read(ipProvider.notifier).state;
       final response = await http.get(
         Uri.parse(
-          'http://192.168.1.106:8000/api/user/apartments/$apartmentId/availability',
+          'http://$ip:8000/api/user/apartments/$apartmentId/availability',
         ),
         headers: {
           'Accept': 'application/json',
@@ -449,10 +449,9 @@ class _PropertyDetailsCardState extends ConsumerState<PropertyDetailsCard> {
     final String end = _endDate!.toIso8601String().substring(0, 10);
 
     try {
+      final ip = ref.read(ipProvider.notifier).state;
       final response = await http.post(
-        Uri.parse(
-          'http://192.168.1.106:8000/api/user/apartments/$apartmentId/rent',
-        ),
+        Uri.parse('http://$ip:8000/api/user/apartments/$apartmentId/rent'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -626,11 +625,9 @@ class _PropertyDetailsCardState extends ConsumerState<PropertyDetailsCard> {
     try {
       final int apartmentId = widget.property['id'];
       final token = ref.read(tokenProvider);
-
+      final ip = ref.read(ipProvider.notifier).state;
       final response = await http.post(
-        Uri.parse(
-          'http://192.168.1.106:8000/api/user/apartment/$apartmentId/reviews',
-        ),
+        Uri.parse('http://$ip:8000/api/user/apartment/$apartmentId/reviews'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

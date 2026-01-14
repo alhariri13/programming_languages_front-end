@@ -8,6 +8,7 @@ import 'package:tanzan/add_new_appartment_screen.dart';
 import 'package:tanzan/filter.dart';
 import 'package:tanzan/profile_screen.dart';
 import 'package:tanzan/notification_screen.dart';
+import 'package:tanzan/providers/ip_provider.dart';
 import 'package:tanzan/providers/token_provider.dart';
 import 'package:tanzan/search_screen.dart';
 import 'package:tanzan/favorites_screen.dart';
@@ -67,8 +68,8 @@ final favoritesSyncProvider = FutureProvider<void>((ref) async {
     ref.read(favoritesProvider.notifier).state = <int>{};
     return;
   }
-
-  final url = Uri.http('192.168.1.106:8000', 'api/user/favorites');
+  final ip = ref.read(ipProvider.notifier).state;
+  final url = Uri.http('$ip:8000', 'api/user/favorites');
   final response = await http.get(
     url,
     headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
@@ -93,8 +94,8 @@ final apartmentsProvider = FutureProvider<List<Apartment>>((ref) async {
     ref.read(favoritesProvider.notifier).state = <int>{};
     throw Exception("No token found");
   }
-
-  final url = Uri.http('192.168.1.106:8000', 'api/user/apartments');
+  final ip = ref.read(ipProvider.notifier).state;
+  final url = Uri.http('$ip:8000', 'api/user/apartments');
   final response = await http.get(
     url,
     headers: {
@@ -122,8 +123,9 @@ Future<void> addFavorite(WidgetRef ref, int apartmentId) async {
     ref.read(favoritesProvider.notifier).state = <int>{};
     throw Exception("No token found");
   }
+  final ip = ref.read(ipProvider.notifier).state;
 
-  final url = Uri.http('192.168.1.106:8000', 'api/user/favorites/$apartmentId');
+  final url = Uri.http('$ip:8000', 'api/user/favorites/$apartmentId');
   final response = await http.post(
     url,
     headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
@@ -146,8 +148,8 @@ Future<void> removeFavorite(WidgetRef ref, int apartmentId) async {
     ref.read(favoritesProvider.notifier).state = <int>{};
     throw Exception("No token found");
   }
-
-  final url = Uri.http('192.168.1.106:8000', 'api/user/favorites/$apartmentId');
+  final ip = ref.read(ipProvider.notifier).state;
+  final url = Uri.http('$ip:8000', 'api/user/favorites/$apartmentId');
   final response = await http.delete(
     url,
     headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
@@ -373,7 +375,7 @@ class HomePage extends ConsumerWidget {
                           itemBuilder: (context, index) {
                             final apartment = apartments[index];
                             final isFavorite = favorites.contains(apartment.id);
-
+                            final ip = ref.read(ipProvider.notifier).state;
                             return Card(
                               clipBehavior: Clip.antiAlias,
                               color: cardColor.withOpacity(0.9),
@@ -401,7 +403,7 @@ class HomePage extends ConsumerWidget {
                                         children: [
                                           apartment.images.isNotEmpty
                                               ? Image.network(
-                                                  "http://192.168.1.106:8000/storage/${apartment.images[0]}",
+                                                  "http://$ip:8000/storage/${apartment.images[0]}",
                                                   fit: BoxFit.cover,
                                                   errorBuilder:
                                                       (

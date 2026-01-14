@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tanzan/providers/ip_provider.dart';
 import 'package:tanzan/providers/token_provider.dart';
 
 class EditRentRequestScreen extends ConsumerStatefulWidget {
@@ -16,8 +17,6 @@ class _EditRentRequestScreenState extends ConsumerState<EditRentRequestScreen> {
   List<dynamic> _requests = [];
   bool _loading = true;
 
-  static const String baseUrl = 'http://192.168.1.106:8000';
-
   @override
   void initState() {
     super.initState();
@@ -27,9 +26,10 @@ class _EditRentRequestScreenState extends ConsumerState<EditRentRequestScreen> {
   Future<void> _fetchRequests() async {
     try {
       final token = ref.read(tokenProvider);
+      final ip = ref.read(ipProvider.notifier).state;
 
       final response = await http.get(
-        Uri.parse('$baseUrl/api/user/owner/updaterentals'),
+        Uri.parse('http://$ip:8000/api/user/owner/updaterentals'),
         headers: {
           'Accept': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
@@ -65,9 +65,11 @@ class _EditRentRequestScreenState extends ConsumerState<EditRentRequestScreen> {
   Future<void> _approveRequest(int requestId) async {
     try {
       final token = ref.read(tokenProvider);
-
+      final ip = ref.read(ipProvider.notifier).state;
       final response = await http.post(
-        Uri.parse('$baseUrl/api/user/owner/updaterental/$requestId/approve'),
+        Uri.parse(
+          'http://$ip:8000/api/user/owner/updaterental/$requestId/approve',
+        ),
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -95,9 +97,11 @@ class _EditRentRequestScreenState extends ConsumerState<EditRentRequestScreen> {
   Future<void> _rejectRequest(int requestId) async {
     try {
       final token = ref.read(tokenProvider);
-
+      final ip = ref.read(ipProvider.notifier).state;
       final response = await http.post(
-        Uri.parse('$baseUrl/api/user/owner/updaterental/$requestId/reject'),
+        Uri.parse(
+          'http://$ip:8000/api/user/owner/updaterental/$requestId/reject',
+        ),
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -199,6 +203,8 @@ class _EditRentRequestScreenState extends ConsumerState<EditRentRequestScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ip = ref.read(ipProvider.notifier).state;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Editing rent requests')),
       body: _loading
@@ -240,7 +246,7 @@ class _EditRentRequestScreenState extends ConsumerState<EditRentRequestScreen> {
                               borderRadius: BorderRadius.circular(8),
                               child: (imagePath != null && imagePath.isNotEmpty)
                                   ? Image.network(
-                                      '$baseUrl/storage/$imagePath',
+                                      'http://$ip:8000/storage/$imagePath',
                                       width: 80,
                                       height: 80,
                                       fit: BoxFit.cover,

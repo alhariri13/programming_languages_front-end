@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:tanzan/property_details_screen.dart';
 import 'package:get/get.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tanzan/providers/ip_provider.dart';
 import 'package:tanzan/providers/token_provider.dart';
 
 // ✅ Import the global favoritesProvider
@@ -32,8 +33,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   Future<void> _fetchFavorites() async {
     final token = ref.read(tokenProvider);
     if (token == null) return;
-
-    final url = Uri.http('192.168.1.106:8000', 'api/user/favorites');
+    final ip = ref.read(ipProvider.notifier).state;
+    final url = Uri.http('$ip:8000', 'api/user/favorites');
     try {
       final response = await http.get(
         url,
@@ -48,6 +49,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
         final List apartmentsJson = data['apartments'] ?? [];
 
         setState(() {
+          final ip = ref.read(ipProvider.notifier).state;
           _currentFavorites = apartmentsJson.map<Map<String, dynamic>>((apt) {
             return {
               'id': apt['id'],
@@ -58,10 +60,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
               'baths': apt['number_of_bathrooms'],
               'address': '${apt['city']}, ${apt['state']}',
               'images': (apt['images'] as List? ?? [])
-                  .map(
-                    (img) =>
-                        "http://192.168.1.106:8000/storage/${img['image_path']}",
-                  )
+                  .map((img) => "http://$ip:8000/storage/${img['image_path']}")
                   .toList(),
               'area': apt['area'] ?? 0,
             };
@@ -85,11 +84,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   Future<void> _removeFavorite(int apartmentId) async {
     final token = ref.read(tokenProvider);
     if (token == null) return;
-
-    final url = Uri.http(
-      '192.168.1.106:8000',
-      'api/user/favorites/$apartmentId',
-    );
+    final ip = ref.read(ipProvider.notifier).state;
+    final url = Uri.http('$ip:8000', 'api/user/favorites/$apartmentId');
     try {
       final response = await http.delete(
         url,

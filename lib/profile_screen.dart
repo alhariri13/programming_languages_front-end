@@ -8,6 +8,7 @@ import 'package:tanzan/login_screen.dart';
 import 'package:tanzan/edit_screen.dart';
 import 'package:tanzan/myapartment_screen.dart';
 import 'package:tanzan/booking_history.dart';
+import 'package:tanzan/providers/ip_provider.dart';
 import 'package:tanzan/providers/token_provider.dart';
 import 'package:tanzan/wallet_screen.dart';
 
@@ -16,8 +17,8 @@ final profileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   if (token == null || token.isEmpty) {
     throw Exception("No token found");
   }
-
-  final url = Uri.http('192.168.1.106:8000', 'api/profile');
+  final ip = ref.read(ipProvider.notifier).state;
+  final url = Uri.http('$ip:8000', 'api/profile');
   final response = await http.get(
     url,
     headers: {
@@ -53,8 +54,8 @@ class ProfileScreen extends ConsumerWidget {
   Future<void> _logout(BuildContext context, WidgetRef ref) async {
     final navigator = Navigator.of(context);
     final token = ref.read(tokenProvider);
-
-    final url = Uri.http('192.168.1.106:8000', 'api/logout');
+    final ip = ref.read(ipProvider.notifier).state;
+    final url = Uri.http('$ip:8000', 'api/logout');
     try {
       await http.post(
         url,
@@ -153,9 +154,10 @@ class ProfileScreen extends ConsumerWidget {
           final String? imagePath = userInfo['profile_picture']['image_path'];
 
           // Build full image URL from backend path
-          const baseUrl = "http://192.168.1.106:8000";
+          // const baseUrl = "http://192.168.1.106:8000";
+          final ip = ref.read(ipProvider.notifier).state;
           final fullImageUrl = (imagePath != null && imagePath.isNotEmpty)
-              ? "$baseUrl/storage/$imagePath"
+              ? "http://$ip:8000/storage/$imagePath"
               : null;
 
           final List<Map<String, dynamic>> menuItems = [

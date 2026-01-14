@@ -1,7 +1,9 @@
 // booking_history_item.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tanzan/providers/ip_provider.dart';
 
-class BookingHistoryItem extends StatelessWidget {
+class BookingHistoryItem extends ConsumerWidget {
   final String title;
   final String startDate;
   final String endDate;
@@ -48,7 +50,8 @@ class BookingHistoryItem extends StatelessWidget {
       status.toLowerCase() == 'ongoing';
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ip = ref.read(ipProvider.notifier).state;
     return Card(
       color: const Color(0xFF3B5998),
       child: Padding(
@@ -60,7 +63,7 @@ class BookingHistoryItem extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               child: (imagePath != null && imagePath!.isNotEmpty)
                   ? Image.network(
-                      'http://192.168.1.106:8000/storage/$imagePath',
+                      'http://$ip:8000/storage/$imagePath',
                       width: 80,
                       height: 80,
                       fit: BoxFit.cover,

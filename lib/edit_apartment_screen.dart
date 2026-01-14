@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tanzan/providers/ip_provider.dart';
 import 'package:tanzan/providers/token_provider.dart';
-
-const String baseUrl = "http://192.168.1.106:8000";
 
 class EditApartmentScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> apartmentData;
@@ -117,9 +116,11 @@ class _EditApartmentScreenState extends ConsumerState<EditApartmentScreen> {
 
     try {
       final token = ref.read(tokenProvider);
-
+      final ip = ref.read(ipProvider.notifier).state;
       final response = await http.put(
-        Uri.parse("$baseUrl/api/user/apartments/${widget.apartmentData['id']}"),
+        Uri.parse(
+          "http://$ip:8000/api/user/apartments/${widget.apartmentData['id']}",
+        ),
         headers: {
           "Accept": "application/json",
           "Authorization": "Bearer $token",
