@@ -1,169 +1,350 @@
+// booking_history_screen.dart
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tanzan/providers/token_provider.dart';
+import 'package:tanzan/booking_history_item.dart';
 
-class BookingHistoryScreen extends StatelessWidget {
+class BookingHistoryScreen extends ConsumerStatefulWidget {
   const BookingHistoryScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3, // عدد التبويبات: قادمة، سابقة، ملغية
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          title: Text(
-            'Booking History'.tr,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+  ConsumerState<BookingHistoryScreen> createState() =>
+      _BookingHistoryScreenState();
+}
+
+class _BookingHistoryScreenState extends ConsumerState<BookingHistoryScreen> {
+  List<dynamic> _bookings = [];
+  bool _loading = true;
+
+  static const String baseUrl = 'http://192.168.1.106:8000';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchBookings();
+  }
+
+  Future<void> _fetchBookings() async {
+    try {
+      final token = ref.read(tokenProvider);
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/user/rentals'),
+        headers: {
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _bookings = (data['rentals'] ?? []) as List<dynamic>;
+          _loading = false;
+        });
+      } else {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load bookings: ${response.statusCode}'),
           ),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
-          ),
-          bottom: TabBar(
-            indicatorColor: Colors.blueAccent,
-            labelColor: Colors.blueAccent,
-            unselectedLabelColor: Colors.white60,
-            tabs: [
-              Tab(text: 'Upcoming'.tr),
-              Tab(text: 'Past'.tr),
-              Tab(text: 'Cancelled'.tr),
-            ],
-          ),
-        ),
-        body: Stack(
-          children: [
-            // الخلفية الثابتة للتطبيق
-            Container(
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/background_image.jpg'),
-                  fit: BoxFit.cover,
-                ),
+        );
+      }
+    } catch (e) {
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  String _formatDate(String? iso) {
+    if (iso == null || iso.isEmpty) return '';
+    return iso.length >= 10 ? iso.substring(0, 10) : iso;
+  }
+
+  String? _firstImagePath(List<dynamic> images) {
+    if (images.isEmpty) return null;
+    final first = images.first;
+    if (first is Map<String, dynamic>) {
+      return first['image_path']?.toString();
+    }
+    if (first is String) return first;
+    return null;
+  }
+
+  Future<void> _updateBooking({
+    required int bookingId,
+    required String startDate,
+    required String endDate,
+  }) async {
+    try {
+      final token = ref.read(tokenProvider);
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/user/rentals/$bookingId/update'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'start_date': startDate, 'end_date': endDate}),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Booking updated successfully!')),
+        );
+        await _fetchBookings();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update booking: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error updating booking: $e')));
+    }
+  }
+
+  /// Cancel booking via Laravel POST route
+  Future<void> _cancelBooking(int bookingId, String title) async {
+    try {
+      final token = ref.read(tokenProvider);
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/user/rentals/$bookingId/cancel'),
+        headers: {
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Booking "$title" cancelled successfully!')),
+        );
+        await _fetchBookings();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to cancel booking: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error cancelling booking: $e')));
+    }
+  }
+
+  void _openEditSheet({
+    required BuildContext context,
+    required String currentStart,
+    required String currentEnd,
+    required String title,
+    required int bookingId,
+  }) {
+    DateTime? _startDate;
+    DateTime? _endDate;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setState) {
+            Future<void> _pickDate({required bool isStart}) async {
+              final initial =
+                  DateTime.tryParse(isStart ? currentStart : currentEnd) ??
+                  DateTime.now();
+              final picked = await showDatePicker(
+                context: ctx,
+                initialDate: initial,
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2035),
+              );
+              if (picked != null) {
+                setState(() {
+                  if (isStart) {
+                    _startDate = picked;
+                  } else {
+                    _endDate = picked;
+                  }
+                });
+              }
+            }
+
+            String _displayDate(DateTime? d, String fallback) {
+              if (d == null) return fallback;
+              return d.toIso8601String().substring(0, 10);
+            }
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
+                left: 16,
+                right: 16,
+                top: 24,
               ),
-              child: Container(color: Colors.black.withOpacity(0.85)),
-            ),
-            
-            SafeArea(
-              child: TabBarView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildBookingList('upcoming'),
-                  _buildBookingList('past'),
-                  _buildBookingList('cancelled'),
+                  Text(
+                    'Edit Booking: $title',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => _pickDate(isStart: true),
+                          child: Text(
+                            'Start: ${_displayDate(_startDate, currentStart)}',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => _pickDate(isStart: false),
+                          child: Text(
+                            'End: ${_displayDate(_endDate, currentEnd)}',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.save),
+                    label: const Text('Save'),
+                    onPressed: () async {
+                      final startStr =
+                          _startDate?.toIso8601String().substring(0, 10) ??
+                          currentStart;
+                      final endStr =
+                          _endDate?.toIso8601String().substring(0, 10) ??
+                          currentEnd;
+
+                      Navigator.pop(ctx);
+
+                      await _updateBooking(
+                        bookingId: bookingId,
+                        startDate: startStr,
+                        endDate: endStr,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
                 ],
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBookingList(String type) {
-    // هذه بيانات تجريبية فقط لعرض شكل الواجهة
-    final List<Map<String, dynamic>> dummyBookings = [
-      {
-        'title': 'Grand Royale Apartment',
-        'date': 'Oct 24 - Oct 28, 2025',
-        'price': '450 \$',
-        'status': type,
-        'image': 'assets/background_image.jpg'
-      },
-      {
-        'title': 'Cozy Studio Suite',
-        'date': 'Nov 12 - Nov 15, 2025',
-        'price': '210 \$',
-        'status': type,
-        'image': 'assets/background_image.jpg'
-      },
-    ];
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: dummyBookings.length,
-      itemBuilder: (context, index) {
-        final booking = dummyBookings[index];
-        return _buildBookingCard(booking);
+            );
+          },
+        );
       },
     );
   }
 
-  Widget _buildBookingCard(Map<String, dynamic> booking) {
-    Color statusColor;
-    switch (booking['status']) {
-      case 'upcoming': statusColor = Colors.greenAccent; break;
-      case 'past': statusColor = Colors.blueAccent; break;
-      case 'cancelled': statusColor = Colors.redAccent; break;
-      default: statusColor = Colors.white;
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF282A3A).withOpacity(0.9),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Row(
-        children: [
-          // صورة العقار المصغرة
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.asset(
-              booking['image'],
-              width: 80,
-              height: 80,
-              fit: BoxFit.cover,
-            ),
+  void _confirmCancel({
+    required BuildContext context,
+    required String title,
+    required int bookingId,
+  }) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancel booking'),
+        content: Text('Are you sure you want to cancel "$title"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('No'),
           ),
-          const SizedBox(width: 15),
-          
-          // تفاصيل الحجز
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  booking['title'],
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  booking['date'],
-                  style: const TextStyle(color: Colors.white60, fontSize: 13),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      booking['price'],
-                      style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold),
-                    ),
-                    // ملصق الحالة (Status Label)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: statusColor.withOpacity(0.5)),
-                      ),
-                      child: Text(
-                        booking['status'].toString().capitalizeFirst!,
-                        style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _cancelBooking(bookingId, title);
+            },
+            child: const Text('Yes, cancel'),
           ),
         ],
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Booking history')),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _bookings.isEmpty
+          ? const Center(
+              child: Text(
+                'No bookings found',
+                style: TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _fetchBookings,
+              child: ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: _bookings.length,
+                itemBuilder: (context, index) {
+                  final booking = _bookings[index] as Map<String, dynamic>;
+                  final apartment =
+                      (booking['apartment'] ?? {}) as Map<String, dynamic>;
+                  final title = apartment['title']?.toString() ?? 'Unknown';
+                  final startDate = _formatDate(
+                    booking['start_date']?.toString(),
+                  );
+                  final endDate = _formatDate(booking['end_date']?.toString());
+                  final price = booking['total_price']?.toString() ?? '';
+                  final status = booking['status']?.toString() ?? 'unknown';
+                  final images = (apartment['images'] ?? []) as List<dynamic>;
+                  final imagePath = _firstImagePath(images);
+                  final bookingId = booking['id'] is int
+                      ? booking['id'] as int
+                      : int.tryParse('${booking['id']}') ?? index;
+
+                  return BookingHistoryItem(
+                    title: title,
+                    startDate: startDate,
+                    endDate: endDate,
+                    price: price,
+                    status: status,
+                    imagePath: imagePath,
+                    onEdit: () {
+                      _openEditSheet(
+                        context: context,
+                        currentStart: startDate,
+                        currentEnd: endDate,
+                        title: title,
+                        bookingId: bookingId,
+                      );
+                    },
+                    onCancel: () {
+                      _confirmCancel(
+                        context: context,
+                        title: title,
+                        bookingId: bookingId,
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
     );
   }
 }

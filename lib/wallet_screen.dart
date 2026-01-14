@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 class MiniWalletSheet extends StatelessWidget {
-  const MiniWalletSheet({super.key});
-
+  const MiniWalletSheet({super.key, required this.walletBalance});
+  final String walletBalance;
   @override
   Widget build(BuildContext context) {
     // You can adjust these colors to match your dark theme
@@ -51,23 +51,22 @@ class MiniWalletSheet extends StatelessWidget {
 
             // Wallet Balance Card
             Card(
-              color: blueAccent.withOpacity(0.2), // Light blue background for the card
+              color: blueAccent.withOpacity(
+                0.2,
+              ), // Light blue background for the card
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(15.0),
                 side: const BorderSide(color: blueAccent, width: 2),
               ),
               elevation: 0,
-              child: const Padding(
+              child: Padding(
                 padding: EdgeInsets.all(20.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Current Balance',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16,
-                      ),
+                      style: TextStyle(color: Colors.white70, fontSize: 16),
                     ),
                     SizedBox(height: 8),
                     Row(
@@ -75,14 +74,18 @@ class MiniWalletSheet extends StatelessWidget {
                       children: [
                         Text(
                           // Fixed value - replace with dynamic data if linked to State
-                          '\$1,250.00', 
+                          '\$$walletBalance',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 34,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        Icon(Icons.account_balance_wallet, color: blueAccent, size: 40),
+                        Icon(
+                          Icons.account_balance_wallet,
+                          color: blueAccent,
+                          size: 40,
+                        ),
                       ],
                     ),
                   ],
@@ -95,11 +98,14 @@ class MiniWalletSheet extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: () {
                 // Navigate to the 'Add Funds' screen logic
-                Navigator.pop(context); 
+                Navigator.pop(context);
                 // You can add navigation logic here: e.g., Navigator.push(context, MaterialPageRoute(...))
               },
               icon: const Icon(Icons.add_circle_outline),
-              label: const Text('Recharge Wallet Balance', style: TextStyle(fontSize: 18)),
+              label: const Text(
+                'Recharge Wallet Balance',
+                style: TextStyle(fontSize: 18),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: blueAccent,
                 foregroundColor: Colors.white,
@@ -111,8 +117,6 @@ class MiniWalletSheet extends StatelessWidget {
             ),
 
             const SizedBox(height: 10),
-            
-
           ],
         ),
       ),

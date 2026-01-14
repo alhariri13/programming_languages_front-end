@@ -1,62 +1,87 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart'; // إضافة المكتبة
-import 'package:home/first_sign_up_screen.dart';
+import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
-import 'package:home/home_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tanzan/home_page.dart';
+import 'package:tanzan/first_sign_up_screen.dart';
+import 'package:tanzan/providers/token_provider.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  //  Password Visibility
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isPasswordVisible = false;
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  void _loginButton() {
-    if (_phoneController.text.trim().isEmpty ||
-        _passwordController.text.trim().isEmpty) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          // استخدام .tr مع نصوصك الأصلية كمفاتيح
-          title: Text('Invalid Input'.tr), 
-          content: Text('please make sure that you have already fill all the gaps'.tr),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-              },
-              child: Text('Okay'.tr),
-            ),
-          ],
-        ),
-      );
+  Future<void> login() async {
+    final url = Uri.http("192.168.1.106:8000", "/api/login");
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'phone_number': _phoneController.text,
+        'password': _passwordController.text,
+      }),
+    );
+
+    print('Login status: ${response.statusCode}');
+    print('Login body: ${response.body}');
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      try {
+        final data = json.decode(response.body);
+        final token = data['token'];
+
+        // ✅ Save token reactively in Riverpod
+        ref.read(tokenProvider.notifier).state = token;
+
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (ctx) => const HomePage()),
+        );
+      } catch (e) {
+        print('JSON decode error: $e');
+        _showErrorDialog('Invalid server response');
+      }
     } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage()),
-      );
+      try {
+        final message = json.decode(response.body);
+        _showErrorDialog(message['message'] ?? 'Login failed');
+      } catch (e) {
+        _showErrorDialog('Login failed: ${response.body}');
+      }
     }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Login Failed'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Okay'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // إزالة Directionality الثابت لكي تتغير الواجهة (يمين/يسار) تلقائياً حسب اللغة
     return Scaffold(
       body: Stack(
         children: [
-          // 1. Background Image
           _buildBackgroundImage(),
-
-          // 2. Dark Overlay for better text visibility
           _buildOverlay(),
-
-          // 3. Main Content (Logo, Fields, Buttons)
           _buildContent(context),
         ],
       ),
@@ -87,12 +112,8 @@ class _LoginScreenState extends State<LoginScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             SizedBox(height: MediaQuery.of(context).size.height * 0.15),
-
-            // 4. App Logo/Icon (House icon)
             const Icon(Icons.home_outlined, color: Colors.white, size: 70.0),
             const SizedBox(height: 20),
-
-            // 5. Welcome Text
             const Text(
               'TANZAN',
               textAlign: TextAlign.center,
@@ -103,27 +124,24 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             Text(
-              'Your Swift Key to the Dream Home....'.tr, // أضفنا .tr
+              'Your Swift Key to the Dream Home....'.tr,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 14,
-                fontWeight: FontWeight.w300
+                fontWeight: FontWeight.w300,
               ),
             ),
             const SizedBox(height: 50),
-
-            // 6. Phone Number Input Field
             _buildInputField(
-              hintText: 'phone number'.tr, // أضفنا .tr
+              hintText: 'phone number'.tr,
               icon: Icons.phone_outlined,
               isPhoneNumber: true,
               controller: _phoneController,
             ),
             const SizedBox(height: 15),
-
             _buildInputField(
-              hintText: 'Password'.tr, // أضفنا .tr
+              hintText: 'Password'.tr,
               controller: _passwordController,
               icon: Icons.lock_outline,
               isPassword: !_isPasswordVisible,
@@ -140,25 +158,21 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             const SizedBox(height: 10),
-
-            // 8. "Forgot Password?" Link
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () {},
                 child: Text(
-                  'Forgot Password?'.tr, // أضفنا .tr
+                  'Forgot Password?'.tr,
                   style: const TextStyle(color: Colors.white70),
                 ),
               ),
             ),
             const SizedBox(height: 20),
-
-            // 9. Login Button
             SizedBox(
               height: 50,
               child: ElevatedButton(
-                onPressed: _loginButton,
+                onPressed: login,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF3B609E),
                   shape: RoundedRectangleBorder(
@@ -166,19 +180,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 child: Text(
-                  'LOGIN'.tr, // أضفنا .tr
+                  'LOGIN'.tr,
                   style: const TextStyle(fontSize: 18, color: Colors.white),
                 ),
               ),
             ),
             const SizedBox(height: 50),
-
-            // 10. Registration Link (Don't have an account?)
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  "Don't have an account?".tr, // أضفنا .tr
+                  "Don't have an account?".tr,
                   style: const TextStyle(color: Colors.white70),
                 ),
                 TextButton(
@@ -186,12 +198,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => FirstSignUpScreen(),
+                        builder: (context) => const FirstSignUpScreen(),
                       ),
                     );
                   },
                   child: Text(
-                    'Create Account'.tr, // أضفنا .tr
+                    'Create Account'.tr,
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -206,7 +218,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Helper function remains exactly the same
   Widget _buildInputField({
     required String hintText,
     required IconData icon,

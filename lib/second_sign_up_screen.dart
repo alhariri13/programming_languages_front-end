@@ -1,21 +1,33 @@
+import 'package:path/path.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart'; // إضافة المكتبة
-import 'package:home/home_page.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:home/login_screen.dart';
+import 'package:tanzan/login_screen.dart';
 
 class SecondSignUpScreen extends StatefulWidget {
-  const SecondSignUpScreen({super.key});
-
+  const SecondSignUpScreen({
+    super.key,
+    required this.firstName,
+    required this.lastName,
+    required this.password,
+  });
+  final String firstName;
+  final String lastName;
+  final String password;
   @override
   State<SecondSignUpScreen> createState() => _NextPageState();
 }
 
 class _NextPageState extends State<SecondSignUpScreen> {
+  final _emailController = TextEditingController();
+  final _phoneNumberController = TextEditingController();
+
   File? _profileImage;
   File? _idImage;
   DateTime? _dateOfBirth;
+  String? isoDate;
 
   Future<void> _pickImage(bool isProfileImage) async {
     final picker = ImagePicker();
@@ -35,9 +47,8 @@ class _NextPageState extends State<SecondSignUpScreen> {
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _dateOfBirth ?? DateTime.now(),
       firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
+      lastDate: DateTime(2010, 12, 31),
       builder: (context, child) {
         return Theme(
           data: ThemeData.dark().copyWith(
@@ -54,6 +65,7 @@ class _NextPageState extends State<SecondSignUpScreen> {
       },
     );
     if (picked != null && picked != _dateOfBirth) {
+      isoDate = picked.toIso8601String();
       setState(() {
         _dateOfBirth = picked;
       });
@@ -62,6 +74,66 @@ class _NextPageState extends State<SecondSignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    void register() async {
+      final url = Uri.parse("http://192.168.1.106:8000/api/register");
+
+      var request = http.MultipartRequest("POST", url);
+
+      // Add text fields
+      request.fields['first_name'] = widget.firstName;
+      request.fields['last_name'] = widget.lastName;
+      request.fields['email'] = _emailController.text;
+      request.fields['phone_number'] = _phoneNumberController.text;
+      request.fields['password'] = widget.password;
+      request.fields['date_of_birth'] = isoDate!;
+
+      // Add files
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'profile_picture',
+          _profileImage!.path,
+          filename: basename(_profileImage!.path),
+        ),
+      );
+
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'personal_id',
+          _idImage!.path,
+          filename: basename(_idImage!.path),
+        ),
+      );
+
+      // Send request
+      var response = await request.send();
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('waiting for regestration to be confirmed')),
+        );
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+        );
+      } else {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text('Registration Failed'),
+            content: Text('Please check your details and try again.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                },
+                child: Text('Okay'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -107,11 +179,21 @@ class _NextPageState extends State<SecondSignUpScreen> {
                 const SizedBox(height: 35),
 
                 // Email
-                buildInputField(icon: Icons.email, hint: "email".tr), // أضفنا .tr
+                buildInputField(
+                  icon: Icons.email,
+                  controller: _emailController,
+                  hint: "email".tr,
+                  keyBoaredType: TextInputType.emailAddress,
+                ), // أضفنا .tr
                 const SizedBox(height: 15),
 
                 // Phone
-                buildInputField(icon: Icons.phone, hint: "phone number".tr), // أضفنا .tr
+                buildInputField(
+                  controller: _phoneNumberController,
+                  icon: Icons.phone,
+                  hint: "phone number".tr,
+                  keyBoaredType: TextInputType.number,
+                ), // أضفنا .tr
                 const SizedBox(height: 15),
 
                 // Date of Birth
@@ -147,14 +229,7 @@ class _NextPageState extends State<SecondSignUpScreen> {
                   height: 50,
                   width: 175,
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const HomePage(),
-                        ),
-                      );
-                    },
+                    onPressed: register,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF3B609E),
                       shape: RoundedRectangleBorder(
@@ -288,7 +363,9 @@ class _NextPageState extends State<SecondSignUpScreen> {
 Widget buildInputField({
   required IconData icon,
   required String hint,
+  required controller,
   bool obscure = false,
+  required TextInputType keyBoaredType,
 }) {
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -297,6 +374,7 @@ Widget buildInputField({
       borderRadius: BorderRadius.circular(12),
     ),
     child: TextField(
+      controller: controller,
       obscureText: obscure,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(

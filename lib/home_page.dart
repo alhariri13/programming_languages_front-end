@@ -1,244 +1,235 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:home/add_new_appartment_screen.dart';
-import 'package:home/filter.dart';
-import 'package:home/profile_screen.dart';
-import 'package:home/notification_screen.dart'; 
-import 'package:home/search_screen.dart'; 
-import 'package:home/favorites_screen.dart'; 
-import 'package:home/property_details_screen.dart'; 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
+import 'package:http/http.dart' as http;
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-  @override
-  State<HomePage> createState() {
-    return _HomePageState();
+import 'package:tanzan/add_new_appartment_screen.dart';
+import 'package:tanzan/filter.dart';
+import 'package:tanzan/profile_screen.dart';
+import 'package:tanzan/notification_screen.dart';
+import 'package:tanzan/providers/token_provider.dart';
+import 'package:tanzan/search_screen.dart';
+import 'package:tanzan/favorites_screen.dart';
+import 'package:tanzan/property_details_screen.dart';
+
+// ------------------ MODEL ------------------
+class Apartment {
+  final int id;
+  final String title;
+  final String description;
+  final String city;
+  final String state;
+  final String pricePerNight;
+  final int bedrooms;
+  final int bathrooms;
+  final List<String> images;
+
+  Apartment({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.city,
+    required this.state,
+    required this.pricePerNight,
+    required this.bedrooms,
+    required this.bathrooms,
+    required this.images,
+  });
+
+  factory Apartment.fromJson(Map<String, dynamic> json) {
+    return Apartment(
+      id: json['id'],
+      title: json['title'],
+      description: json['description'],
+      city: json['city'],
+      state: json['state'],
+      pricePerNight: json['price_per_night'],
+      bedrooms: json['number_of_bedrooms'],
+      bathrooms: json['number_of_bathrooms'],
+      images: (json['images'] as List)
+          .map((img) => img['image_path'] as String)
+          .toList(),
+    );
   }
 }
 
-class _HomePageState extends State<HomePage> {
-  final Color _backgroundColor = const Color(0xFF1B1C27);
-  final TextEditingController _searchController = TextEditingController();
-  final Color _cardColor = const Color(0xFF282A3A);
-  final Color _blueAccent = Colors.blueAccent;
+// ------------------ PROVIDERS ------------------
 
-  // 🌟 تم تحديث البيانات لتشمل: rating, isAvailable, isForRent
-  List<Map<String, dynamic>> _properties = [
-    {'id': 1, 'title': 'Luxury Villa', 'price': '120 \$', 'beds': 4, 'baths': 3, 'area': 3200, 'image': 'assets/villa.png', 'isFavorite': true, 'rating': 4.5, 'isAvailable': true, 'isForRent': true, 'description': 'A stunning villa with a private pool and spacious gardens, ideal for large families.'},
-    {'id': 2, 'title': 'Modern Apartment', 'price': '150 \$', 'beds': 2, 'baths': 2, 'area': 1100, 'image': 'assets/apartment.jpeg', 'isFavorite': false, 'rating': 4.0, 'isAvailable': true, 'isForRent': false, 'description': 'Modern and sleek design with proximity to transport links.'},
-    {'id': 3, 'title': 'Studio in Downtown', 'price': '80\$', 'beds': 1, 'baths': 1, 'area': 550, 'image': 'assets/studio.jpeg', 'isFavorite': true, 'rating': 3.8, 'isAvailable': false, 'isForRent': true, 'description': 'Cozy studio apartment perfect for students or singles.'},
-    {'id': 4, 'title': 'Family House', 'price': '750\$', 'beds': 3, 'baths': 2, 'area': 2500, 'image': 'assets/house.jpeg', 'isFavorite': false, 'rating': 4.7, 'isAvailable': true, 'isForRent': false, 'description': 'A large family home with a spacious backyard.'},
-    {'id': 5, 'title': 'Beachside Bungalow', 'price': '200 \$', 'beds': 2, 'baths': 2, 'area': 900, 'image': 'assets/background_image.jpg', 'isFavorite': true, 'rating': 4.2, 'isAvailable': true, 'isForRent': true, 'description': 'A charming bungalow located steps away from the beach.'},
-    {'id': 6, 'title': 'Beachfront Condo', 'price': '950\$', 'beds': 3, 'baths': 3, 'area': 1800, 'image': 'assets/condo1.jpg', 'isFavorite': false, 'rating': 4.9, 'isAvailable': true, 'isForRent': false, 'description': 'Exclusive beachfront property with amazing ocean views.'},
-    {'id': 7, 'title': 'Loft in City Center', 'price': '110\$', 'beds': 1, 'baths': 1, 'area': 700, 'image': 'assets/loft1.jpg', 'isFavorite': true, 'rating': 3.5, 'isAvailable': false, 'isForRent': true, 'description': 'Industrial style loft in the heart of the city.'},
-  ];
+// Local favorites store (IDs)
+final favoritesProvider = StateProvider<Set<int>>((ref) => <int>{});
+
+// Sync favorites from backend for current user
+final favoritesSyncProvider = FutureProvider<void>((ref) async {
+  final token = ref.watch(tokenProvider);
+  if (token == null) {
+    // user changed or logged out—clear favorites
+    ref.read(favoritesProvider.notifier).state = <int>{};
+    return;
+  }
+
+  final url = Uri.http('192.168.1.106:8000', 'api/user/favorites');
+  final response = await http.get(
+    url,
+    headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+  );
+
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    final List apartmentsJson = data['apartments'] ?? [];
+    final ids = apartmentsJson.map((apt) => apt['id'] as int).toSet();
+    ref.read(favoritesProvider.notifier).state = ids;
+  } else {
+    // if backend fails, keep favorites empty to avoid stale hearts
+    ref.read(favoritesProvider.notifier).state = <int>{};
+  }
+});
+
+final apartmentsProvider = FutureProvider<List<Apartment>>((ref) async {
+  final token = ref.watch(tokenProvider);
+
+  // Reset favorites if no token (user logged out or switched)
+  if (token == null) {
+    ref.read(favoritesProvider.notifier).state = <int>{};
+    throw Exception("No token found");
+  }
+
+  final url = Uri.http('192.168.1.106:8000', 'api/user/apartments');
+  final response = await http.get(
+    url,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    final responseData = jsonDecode(response.body);
+    final List apartmentsJson = responseData['apartments'];
+    return apartmentsJson
+        .map((apartmentJson) => Apartment.fromJson(apartmentJson))
+        .toList();
+  } else {
+    throw Exception("Failed: ${response.statusCode} - ${response.body}");
+  }
+});
+
+// ------------------ API CALLS FOR FAVORITES ------------------
+Future<void> addFavorite(WidgetRef ref, int apartmentId) async {
+  final token = ref.read(tokenProvider);
+  if (token == null) {
+    ref.read(favoritesProvider.notifier).state = <int>{};
+    throw Exception("No token found");
+  }
+
+  final url = Uri.http('192.168.1.106:8000', 'api/user/favorites/$apartmentId');
+  final response = await http.post(
+    url,
+    headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+  );
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    final current = ref.read(favoritesProvider);
+    final next = Set<int>.from(current)..add(apartmentId);
+    ref.read(favoritesProvider.notifier).state = next;
+  } else {
+    throw Exception(
+      "Failed to add favorite: ${response.statusCode} - ${response.body}",
+    );
+  }
+}
+
+Future<void> removeFavorite(WidgetRef ref, int apartmentId) async {
+  final token = ref.read(tokenProvider);
+  if (token == null) {
+    ref.read(favoritesProvider.notifier).state = <int>{};
+    throw Exception("No token found");
+  }
+
+  final url = Uri.http('192.168.1.106:8000', 'api/user/favorites/$apartmentId');
+  final response = await http.delete(
+    url,
+    headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+  );
+
+  if (response.statusCode == 200) {
+    final current = ref.read(favoritesProvider);
+    final next = Set<int>.from(current)..remove(apartmentId);
+    ref.read(favoritesProvider.notifier).state = next;
+  } else {
+    throw Exception(
+      "Failed to remove favorite: ${response.statusCode} - ${response.body}",
+    );
+  }
+}
+
+// ------------------ HOME PAGE ------------------
+class HomePage extends ConsumerWidget {
+  const HomePage({super.key});
 
   PageRouteBuilder _createSlideRoute(Widget targetScreen) {
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => targetScreen,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        const begin = Offset(0.0, 1.0); 
-        const end = Offset.zero; 
-        const curve = Curves.ease; 
-
-        final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
-        );
+        const begin = Offset(0.0, 1.0);
+        const end = Offset.zero;
+        const curve = Curves.ease;
+        final tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
+        return SlideTransition(position: animation.drive(tween), child: child);
       },
-      transitionDuration: const Duration(milliseconds: 400), 
+      transitionDuration: const Duration(milliseconds: 400),
     );
   }
 
-  void _showFilterSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => const Filter(),
-    );
-  }
-
-  void _toggleFavorite(int propertyId) {
-    setState(() {
-      final index = _properties.indexWhere((prop) => prop['id'] == propertyId);
-      if (index != -1) {
-        _properties[index]['isFavorite'] = !_properties[index]['isFavorite'];
-      }
-    });
-  }
-
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: TextField(
-        controller: _searchController,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: 'Search for a property (e.g., Villa, Apartment, Dubai)', 
-          hintStyle: TextStyle(color: Colors.white70.withOpacity(0.5)),
-          filled: true,
-          fillColor: _cardColor.withOpacity(0.8),
-          prefixIcon: Icon(Icons.search, color: _blueAccent),
-          suffixIcon: IconButton(
-            icon: const Icon(Icons.clear, color: Colors.white70),
-            onPressed: () {
-              _searchController.clear();
-            },
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15.0),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15.0),
-            borderSide: BorderSide(color: _blueAccent, width: 2),
-          ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 10.0),
-        ),
-        onSubmitted: (value) {
-          print('Search submitted: $value');
-        },
-      ),
-    );
-  }
-
-  Widget _buildFeatureIcon(IconData icon, dynamic value) {
-    return Row(
-      children: [
-        Icon(icon, color: Colors.grey, size: 16),
-        const SizedBox(width: 4),
-        Text(
-          value.toString(),
-          style: const TextStyle(color: Colors.grey, fontSize: 12),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPropertyCard(BuildContext context, Map<String, dynamic> property, int index) {
-    final isFavorite = property['isFavorite'] as bool;
-
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      color: _cardColor.withOpacity(0.9),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
-      elevation: 5,
-      child: InkWell(
-        // 🌟 التعديل هنا: استدعاء شاشة التفاصيل
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (ctx) => PropertyDetailsScreen(property: property),
-            ),
-          );
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Expanded(
-              flex: 3,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.asset(
-                    property['image'] ?? 'assets/background_image.jpg',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Center(
-                          child: Icon(Icons.apartment, color: Colors.grey, size: 50));
-                    },
-                  ),
-
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: GestureDetector(
-                      onTap: () => _toggleFavorite(property['id']), 
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          isFavorite ? Icons.favorite : Icons.favorite_border,
-                          color: isFavorite ? Colors.redAccent : Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      property['price'],
-                      style: TextStyle(
-                        color: _blueAccent,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      property['title'],
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const Spacer(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildFeatureIcon(Icons.bed, property['beds']),
-                        _buildFeatureIcon(Icons.bathtub, property['baths']),
-                        _buildFeatureIcon(Icons.square_foot, '${property['area']} Sq.ft'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  Future<void> _refresh(WidgetRef ref) async {
+    await ref.refresh(apartmentsProvider.future);
+    await ref.refresh(favoritesSyncProvider.future);
   }
 
   @override
-  Widget build(BuildContext context) {
-    final double appBarHeight = AppBar().preferredSize.height + MediaQuery.of(context).padding.top;
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Trigger favorites sync for current user
+    ref.watch(favoritesSyncProvider);
+
+    final apartmentsAsync = ref.watch(apartmentsProvider);
+    final favorites = ref.watch(favoritesProvider);
+    final Color backgroundColor = const Color(0xFF1B1C27);
+    final Color cardColor = const Color(0xFF282A3A);
+    final Color blueAccent = Colors.blueAccent;
+    final double appBarHeight =
+        AppBar().preferredSize.height + MediaQuery.of(context).padding.top;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      backgroundColor: _backgroundColor,
+      backgroundColor: backgroundColor,
 
       appBar: AppBar(
         leading: IconButton(
-          onPressed: _showFilterSheet,
-          icon: Icon(Icons.filter_list_rounded, color: _blueAccent, size: 28),
+          onPressed: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              builder: (ctx) => const Filter(),
+            );
+          },
+          icon: Icon(Icons.filter_list_rounded, color: blueAccent, size: 28),
         ),
         actions: [
           IconButton(
             onPressed: () {
-              Navigator.of(context).push(
-                _createSlideRoute(const NotificationScreen()),
-              );
+              Navigator.of(
+                context,
+              ).push(_createSlideRoute(const NotificationScreen()));
             },
-            icon: const Icon(Icons.notifications_none, color: Colors.white70, size: 28),
+            icon: const Icon(
+              Icons.notifications_none,
+              color: Colors.white70,
+              size: 28,
+            ),
           ),
           const SizedBox(width: 8),
         ],
@@ -250,7 +241,7 @@ class _HomePageState extends State<HomePage> {
             fontSize: 22,
           ),
         ),
-        backgroundColor: const Color.fromARGB(0, 0, 0, 0),
+        backgroundColor: Colors.transparent,
         elevation: 0,
       ),
 
@@ -265,47 +256,33 @@ class _HomePageState extends State<HomePage> {
               icon: const Icon(Icons.home, color: Colors.white),
               iconSize: 30,
             ),
-            
             IconButton(
               onPressed: () {
-                Navigator.of(context).push(
-                  _createSlideRoute(const SearchScreen()), 
-                );
+                Navigator.of(
+                  context,
+                ).push(_createSlideRoute(const SearchScreen()));
               },
               icon: const Icon(Icons.search, color: Colors.white70),
               iconSize: 30,
             ),
             const SizedBox(width: 40),
-            
             IconButton(
               onPressed: () async {
-                final favoriteProperties = _properties.where((prop) => prop['isFavorite'] == true).toList();
-                
-                final List<Map<String, dynamic>>? updatedFavorites = 
-                    await Navigator.of(context).push(_createSlideRoute(
-                      FavoritesScreen(favoriteProperties: favoriteProperties),
-                    )) as List<Map<String, dynamic>>?;
-                
-                if (updatedFavorites != null) {
-                  _handleFavoritesUpdate(updatedFavorites);
-                }
+                await Navigator.of(
+                  context,
+                ).push(_createSlideRoute(const FavoritesScreen()));
+                // After returning, re-sync favorites to reflect any changes
+                await ref.refresh(favoritesSyncProvider.future);
               },
               icon: const Icon(Icons.favorite_border, color: Colors.white70),
               iconSize: 30,
             ),
-            
             IconButton(
               onPressed: () {
-               Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (context) => const ProfileScreen(
-      userName: "زين ", // مرر الاسم من قاعدة البيانات هنا
-      userEmail: "ايميل", 
-      profileImageUrl: "assets/tanzan.png"  
-    ),
-  ),
-);  
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ProfileScreen()),
+                );
               },
               icon: const Icon(Icons.person_outline, color: Colors.white70),
               iconSize: 30,
@@ -318,32 +295,278 @@ class _HomePageState extends State<HomePage> {
         fit: StackFit.expand,
         children: [
           Image.asset('assets/background_image.jpg', fit: BoxFit.cover),
-
-          Container(
-            color: const Color(0xAA1B1C27),
-          ),
-
+          Container(color: const Color(0xAA1B1C27)),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: appBarHeight),
 
-              _buildSearchBar(),
+              // Search bar
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
+                child: TextField(
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText:
+                        'Search for a property (e.g., Villa, Apartment, Damascus)',
+                    hintStyle: TextStyle(
+                      color: Colors.white70.withOpacity(0.5),
+                    ),
+                    filled: true,
+                    fillColor: cardColor.withOpacity(0.8),
+                    prefixIcon: Icon(Icons.search, color: blueAccent),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.clear, color: Colors.white70),
+                      onPressed: () {},
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15.0),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15.0),
+                      borderSide: BorderSide(color: blueAccent, width: 2),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 15.0,
+                      horizontal: 10.0,
+                    ),
+                  ),
+                  onSubmitted: (value) {
+                    debugPrint('Search submitted: $value');
+                  },
+                ),
+              ),
 
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 10.0, right: 10.0, bottom: 20.0),
-                  child: GridView.builder(
-                    itemCount: _properties.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 15,
-                      mainAxisSpacing: 15,
-                      childAspectRatio: 0.75,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10.0,
+                    vertical: 10,
+                  ),
+                  child: apartmentsAsync.when(
+                    data: (apartments) => NotificationListener<ScrollNotification>(
+                      onNotification: (notification) {
+                        if (notification is OverscrollNotification &&
+                            notification.overscroll > 0) {
+                          _refresh(ref);
+                        }
+                        return false;
+                      },
+                      child: RefreshIndicator(
+                        color: blueAccent,
+                        backgroundColor: cardColor,
+                        onRefresh: () => _refresh(ref),
+                        child: GridView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: apartments.length,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 15,
+                                mainAxisSpacing: 15,
+                                childAspectRatio: 0.75,
+                              ),
+                          itemBuilder: (context, index) {
+                            final apartment = apartments[index];
+                            final isFavorite = favorites.contains(apartment.id);
+
+                            return Card(
+                              clipBehavior: Clip.antiAlias,
+                              color: cardColor.withOpacity(0.9),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15.0),
+                              ),
+                              elevation: 5,
+                              child: InkWell(
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (ctx) => PropertyDetailsScreen(
+                                        apartmentId: apartment.id,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      flex: 3,
+                                      child: Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          apartment.images.isNotEmpty
+                                              ? Image.network(
+                                                  "http://192.168.1.106:8000/storage/${apartment.images[0]}",
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder:
+                                                      (
+                                                        context,
+                                                        error,
+                                                        stackTrace,
+                                                      ) => const Center(
+                                                        child: Icon(
+                                                          Icons.apartment,
+                                                          color: Colors.grey,
+                                                          size: 50,
+                                                        ),
+                                                      ),
+                                                )
+                                              : const Center(
+                                                  child: Icon(
+                                                    Icons.apartment,
+                                                    color: Colors.grey,
+                                                    size: 50,
+                                                  ),
+                                                ),
+                                          Positioned(
+                                            top: 8,
+                                            right: 8,
+                                            child: GestureDetector(
+                                              onTap: () async {
+                                                try {
+                                                  if (isFavorite) {
+                                                    await removeFavorite(
+                                                      ref,
+                                                      apartment.id,
+                                                    );
+                                                  } else {
+                                                    await addFavorite(
+                                                      ref,
+                                                      apartment.id,
+                                                    );
+                                                  }
+                                                } catch (e) {
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text(
+                                                        'Failed to update favorite',
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.all(
+                                                  4,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black54,
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                                child: Icon(
+                                                  isFavorite
+                                                      ? Icons.favorite
+                                                      : Icons.favorite_border,
+                                                  color: isFavorite
+                                                      ? Colors.redAccent
+                                                      : Colors.white,
+                                                  size: 20,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Expanded(
+                                      flex: 2,
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "\$${apartment.pricePerNight}",
+                                              style: TextStyle(
+                                                color: blueAccent,
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              apartment.title,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const Spacer(),
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    const Icon(
+                                                      Icons.bed,
+                                                      color: Colors.grey,
+                                                      size: 16,
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      apartment.bedrooms
+                                                          .toString(),
+                                                      style: const TextStyle(
+                                                        color: Colors.grey,
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  children: [
+                                                    const Icon(
+                                                      Icons.bathtub,
+                                                      color: Colors.grey,
+                                                      size: 16,
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      apartment.bathrooms
+                                                          .toString(),
+                                                      style: const TextStyle(
+                                                        color: Colors.grey,
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ),
-                    itemBuilder: (context, index) {
-                      return _buildPropertyCard(context, _properties[index], index);
-                    },
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (err, stack) => Center(
+                      child: Text(
+                        "Error: $err",
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -354,26 +577,17 @@ class _HomePageState extends State<HomePage> {
 
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => const AddNewAppartmentScreen()));
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddNewAppartmentScreen(),
+            ),
+          );
         },
         backgroundColor: const Color(0xFF3B609E),
         child: const Icon(Icons.add_rounded, size: 35, color: Colors.white),
       ),
-
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
-  }
-
-  void _handleFavoritesUpdate(List<Map<String, dynamic>> updatedFavorites) {
-    setState(() {
-      final updatedFavoriteIds = updatedFavorites.map((prop) => prop['id']).toSet();
-
-      for (var property in _properties) {
-        final bool isStillFavorite = updatedFavoriteIds.contains(property['id']);
-        if (property['isFavorite'] != isStillFavorite) {
-          property['isFavorite'] = isStillFavorite;
-        }
-      }
-    });
   }
 }

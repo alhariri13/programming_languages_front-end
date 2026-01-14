@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart'; // إضافة المكتبة
-import 'package:home/second_sign_up_screen.dart';
+import 'package:tanzan/second_sign_up_screen.dart';
 
 class FirstSignUpScreen extends StatefulWidget {
   const FirstSignUpScreen({super.key});
@@ -10,6 +11,8 @@ class FirstSignUpScreen extends StatefulWidget {
 }
 
 class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -44,7 +47,8 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
         builder: (ctx) => AlertDialog(
           title: Text('Invalid Input'.tr),
           content: Text(
-            'your cofirm password is not the same password you put please correct it'.tr,
+            'your cofirm password is not the same password you put please correct it'
+                .tr,
           ),
           actions: [
             TextButton(
@@ -60,7 +64,13 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
       // استخدام Get.to للانتقال بدلاً من Navigator إذا أردت، أو اتركها كما هي
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const SecondSignUpScreen()),
+        MaterialPageRoute(
+          builder: (context) => SecondSignUpScreen(
+            firstName: _firstNameController.text,
+            lastName: _lastNameController.text,
+            password: _passwordController.text,
+          ),
+        ),
       );
     }
   }
@@ -72,10 +82,7 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
         fit: StackFit.expand,
         children: [
           // خلفية
-          Image.asset(
-            "assets/background_image.jpg",
-            fit: BoxFit.cover,
-          ),
+          Image.asset("assets/background_image.jpg", fit: BoxFit.cover),
 
           // طبقة تعتيم
           Container(color: Colors.black.withOpacity(0.40)),
@@ -116,7 +123,7 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
                 // First Name
                 buildInputField(
                   icon: Icons.person,
-                  hint: "First Name".tr, // أضفنا .tr
+                  hintText: "First Name".tr, // أضفنا .tr
                   controller: _firstNameController,
                 ),
                 const SizedBox(height: 15),
@@ -124,7 +131,7 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
                 // Last Name
                 buildInputField(
                   icon: Icons.person,
-                  hint: "Last Name".tr, // أضفنا .tr
+                  hintText: "Last Name".tr, // أضفنا .tr
                   controller: _lastNameController,
                 ),
                 const SizedBox(height: 15),
@@ -132,18 +139,46 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
                 // Password
                 buildInputField(
                   icon: Icons.lock,
-                  hint: "Password".tr, // أضفنا .tr
+                  hintText: "Password".tr, // أضفنا .tr
                   obscure: true,
                   controller: _passwordController,
+                  isPassword: !_isPasswordVisible,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                      color: Colors.white70,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isPasswordVisible = !_isPasswordVisible;
+                      });
+                    },
+                  ),
                 ),
                 const SizedBox(height: 15),
 
                 // Confirm Password
-                buildInputField(
+                buildInputField1(
                   icon: Icons.lock_outline,
-                  hint: "Confirm Password".tr, // أضفنا .tr
+                  hintText: "Confirm Password".tr, // أضفنا .tr
                   obscure: true,
                   controller: _confirmPasswordController,
+                  isConfirmPassword: !_isConfirmPasswordVisible,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isConfirmPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                      color: Colors.white70,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                      });
+                    },
+                  ),
                 ),
 
                 const SizedBox(height: 35),
@@ -205,25 +240,77 @@ class _FirstSignUpScreenState extends State<FirstSignUpScreen> {
 // تعديل الدالة المساعدة لتقبل الترجمة في الـ hint
 Widget buildInputField({
   required IconData icon,
-  required String hint,
+  required String hintText,
   required TextEditingController controller,
+  bool isPassword = false,
+  bool isPhoneNumber = false,
   bool obscure = false,
+  Widget? suffixIcon,
 }) {
   return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 15),
     decoration: BoxDecoration(
-      color: Colors.white.withOpacity(0.25),
-      borderRadius: BorderRadius.circular(12),
+      color: Colors.white.withOpacity(0.2),
+      borderRadius: BorderRadius.circular(8),
     ),
     child: TextField(
       controller: controller,
-      obscureText: obscure,
+      obscureText: isPassword,
+      obscuringCharacter: '•',
       style: const TextStyle(color: Colors.white),
+      textAlign: TextAlign.left,
+      keyboardType: isPhoneNumber ? TextInputType.phone : TextInputType.text,
+      inputFormatters: isPhoneNumber
+          ? <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly]
+          : null,
       decoration: InputDecoration(
-        icon: Icon(icon, color: Colors.white),
-        border: InputBorder.none,
-        hintText: hint, // الـ hint تم تمريره جاهزاً بـ .tr من الأعلى
+        hintText: hintText,
         hintStyle: const TextStyle(color: Colors.white70),
+        border: InputBorder.none,
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 15.0,
+          horizontal: 10.0,
+        ),
+        prefixIcon: Icon(icon, color: Colors.white70),
+        suffixIcon: suffixIcon,
+      ),
+    ),
+  );
+}
+
+Widget buildInputField1({
+  required IconData icon,
+  required String hintText,
+  required TextEditingController controller,
+  bool isConfirmPassword = false,
+  bool isPhoneNumber = false,
+  bool obscure = false,
+  Widget? suffixIcon,
+}) {
+  return Container(
+    decoration: BoxDecoration(
+      color: Colors.white.withOpacity(0.2),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: TextField(
+      controller: controller,
+      obscureText: isConfirmPassword,
+      obscuringCharacter: '•',
+      style: const TextStyle(color: Colors.white),
+      textAlign: TextAlign.left,
+      keyboardType: isPhoneNumber ? TextInputType.phone : TextInputType.text,
+      inputFormatters: isPhoneNumber
+          ? <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly]
+          : null,
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: const TextStyle(color: Colors.white70),
+        border: InputBorder.none,
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 15.0,
+          horizontal: 10.0,
+        ),
+        prefixIcon: Icon(icon, color: Colors.white70),
+        suffixIcon: suffixIcon,
       ),
     ),
   );
